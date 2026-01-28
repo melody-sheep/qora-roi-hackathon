@@ -1,0 +1,58 @@
+# 📱 Qora - Detailed Interface & Components Design  
+*Designed for community use with clear, non-technical guidance for all users.*
+
+---
+
+## 🔐 **Authentication Interfaces**  
+*Designed to be simple, welcoming, and accessible for everyone.*
+
+| Screen | Components | Description for Users |
+|--------|------------|----------------------|
+| **Login** | 1. **Logo** – Qora icon and name<br>2. **Email Input** – “Enter your email address”<br>3. **Password Input** – “Enter your password”<br>4. **Login Button** – “Sign In”<br>5. **Forgot Password?** – Link<br>6. **Sign Up Link** – “Don’t have an account? Register here”<br>7. **Loading Indicator** – “Signing you in...” | *Welcome back! Just enter your email and password to access your appointments.* |
+| **Register** | 1. **Logo** – Qora icon and name<br>2. **Full Name Input** – “Enter your full name”<br>3. **Email Input** – “Enter your email”<br>4. **Password Input** – “Create a password”<br>5. **Confirm Password** – “Repeat your password”<br>6. **Register Button** – “Create Account”<br>7. **Login Link** – “Already have an account? Sign in here”<br>8. **Validation Messages** – “Passwords must match” | *Join Qora in a few steps. We’ll help you book appointments easily.* |
+
+---
+
+## 🧑‍💼 **Citizen POV – Dashboard & Booking**  
+*Focused on clarity, guidance, and reassurance.*
+
+| Screen | Components | Description for Users |
+|--------|------------|----------------------|
+| **Citizen Dashboard** | 1. **Welcome Header** – “Hello, [Name]”<br>2. **Service List Cards** – Tap to see details<br>3. **Active Appointment Card** – Shows next appointment<br>4. **Queue Badge** – Your current number<br>5. **Status Label** – “Waiting”, “In Progress”, “Done”<br>6. **Navigation Tabs** – Dashboard, Book, Status<br>7. **Refresh Button** – “Check for updates”<br>8. **Help Button** – “How to use?” | *This is your home screen. See your upcoming appointments and current queue status at a glance.* |
+| **Book Appointment** | 1. **Service Dropdown** – “Choose a service”<br>2. **Date Picker** – “Select a date”<br>3. **Time Slot Picker** – “Pick a time”<br>4. **Description Input** – “Tell us what you need (optional)”<br>5. **AI Help Button** – “Help me write this”<br>6. **Character Counter** – “X/200 characters”<br>7. **Submit Button** – “Book Appointment”<br>8. **Back Button** – “Cancel” | *Fill in the details for your appointment. Use the AI helper if you’re not sure how to describe your request.* |
+| **Appointment Status** | 1. **Queue Number Display** – Large bold number<br>2. **Status Timeline** – Visual progress bar<br>3. **Estimated Wait** – “About X minutes left”<br>4. **Cancel Button** – “Cancel Appointment”<br>5. **Progress Indicator** – Animated loading if active<br>6. **Timestamp** – “Booked on [date] at [time]”<br>7. **Notify Me Button** – “Alert me when it’s my turn”<br>8. **Help Text** – “Your turn will come soon. Please wait.” | *Track your place in line. You’ll see updates in real time.* |
+
+---
+
+## 👨‍💼 **Admin POV – Management & Oversight**  
+*Designed for clarity, control, and efficiency.*
+
+| Screen | Components | Description for Users |
+|--------|------------|----------------------|
+| **Admin Dashboard** | 1. **Today’s Summary Cards** – Total, Waiting, In Progress, Done<br>2. **Appointment List** – Scrollable list with name, service, status<br>3. **Filter Buttons** – All, Waiting, Today, Done<br>4. **Search Bar** – “Search by name or queue number”<br>5. **Refresh Button** – Sync latest data<br>6. **Logout Button** – Top right<br>7. **Daily Insights** – “Peak hour: 10 AM”<br>8. **Help Icon** – “Guide to managing queues” | *Overview of today’s appointments. Filter and search to focus on what matters.* |
+| **Appointment Manager** | 1. **Appointment Detail Card** – User info, service, notes<br>2. **Status Selector** – Dropdown: Waiting → In Progress → Done<br>3. **Confirm Button** – “Update Status”<br>4. **History Log** – Past status changes with timestamps<br>5. **Alert Messages** – “Status updated successfully”<br>6. **Call Next Button** – “Call Next in Line”<br>7. **Notes Field** – “Add internal notes”<br>8. **Back to Dashboard** – “← Return to list” | *Manage each appointment individually. Update status and add notes as needed.* |
+
+---
+
+## ℹ️ **Help & Guidance Components (Across All Screens)**
+
+| Component | Where Used | User-Friendly Description |
+|-----------|------------|---------------------------|
+| **Info Popup** | All screens | *Tap the (?) icon for simple instructions.* |
+| **Loading Spinner** | During actions | *Please wait while we process your request.* |
+| **Success Toast** | After actions | *Great! Your appointment is booked.* |
+| **Error Message** | Input/API errors | *Oops! Something went wrong. Please try again.* |
+| **Empty State** | No data | *No appointments yet. Book your first one!* |
+| **Tooltip** | On hover/tap | *This button lets you refresh the list.* |
+
+---
+
+## 📲 **Key Design Principles for Community Use**
+
+1. **Clear Labels** – No technical jargon.
+2. **Visual Feedback** – Buttons change color when pressed.
+3. **Step-by-Step Guidance** – Help text on every screen.
+4. **Accessibility** – Large touch targets, high contrast.
+5. **Reassurance** – Confirmations after every action.
+
+---

@@ -1,0 +1,12 @@
+QORA/
+├── .expo/
+├── assets/
+├── node_modules/
+├── .gitignore
+├── App.js
+├── app.json
+├── development_pan.txt
+├── index.js
+├── package-lock.json
+├── package.json
+└── project_structure.txt
