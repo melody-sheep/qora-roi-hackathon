@@ -46,10 +46,10 @@ export default function StudentDashboardScreen() {
       status: 'confirmed',
     },
     stats: {
-      totalAppointments: 5,
+      totalAppointments: 7,
       upcomingAppointments: 1,
       cancellations: 1,
-      completionRate: '100%',
+      completionRate: '5',
     },
     recentActivity: [
       { id: '1', date: 'Jan 30', action: 'Dental appointment booked', type: 'booking' },
@@ -265,23 +265,23 @@ export default function StudentDashboardScreen() {
         {/* QUICK STATS WIDGET */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.totalAppointments}</Text>
-            <Text style={styles.statLabel}>Total Appointments</Text>
+            <Text style={styles.statNumber1}>{stats.totalAppointments}</Text>
+            <Text style={styles.statLabel}>Total</Text>
           </View>
           
           <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.upcomingAppointments}</Text>
+            <Text style={styles.statNumber2}>{stats.upcomingAppointments}</Text>
             <Text style={styles.statLabel}>Upcoming</Text>
           </View>
           
           <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.cancellations}</Text>
-            <Text style={styles.statLabel}>Cancellations</Text>
+            <Text style={styles.statNumber3}>{stats.cancellations}</Text>
+            <Text style={styles.statLabel}>Cancelled</Text>
           </View>
           
           <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.completionRate}</Text>
-            <Text style={styles.statLabel}>Completion</Text>
+            <Text style={styles.statNumber4}>{stats.completionRate}</Text>
+            <Text style={styles.statLabel}>Completed</Text>
           </View>
         </View>
 
@@ -674,16 +674,35 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  statNumber: {
-    fontSize: 21,
+  statNumber1: {
+    fontSize: 35,
     fontWeight: '700',
-    color: '#1E293B',
+    color: '#000000',
+    marginBottom: 4,
+  },
+  statNumber2: {
+    fontSize: 35,
+    fontWeight: '700',
+    color: '#5a98fc',
+    marginBottom: 4,
+  },
+  statNumber3: {
+    fontSize: 35,
+    fontWeight: '700',
+    color: '#ff3939',
+    marginBottom: 4,
+  },
+  statNumber4: {
+    fontSize: 35,
+    fontWeight: '700',
+    color: '#00bb38',
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 8,
+    fontSize: 10,
     color: '#64748B',
     textAlign: 'center',
+    minWidth: 100
   },
   
   // SECTIONS
