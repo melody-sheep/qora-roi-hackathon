@@ -73,7 +73,7 @@ export default function ManageAppointmentsScreen() {
     },
   ]);
 
-  const [filter, setFilter] = useState('all'); // all, today, upcoming
+  const [filter, setFilter] = useState('all');
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -83,17 +83,6 @@ export default function ManageAppointmentsScreen() {
       case 'completed': return '#6B7280';
       case 'cancelled': return '#EF4444';
       default: return '#6B7280';
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'in-progress': return 'time-outline';
-      case 'waiting': return 'person-outline';
-      case 'confirmed': return 'checkmark-circle-outline';
-      case 'completed': return 'checkmark-done-outline';
-      case 'cancelled': return 'close-circle-outline';
-      default: return 'help-circle-outline';
     }
   };
 
@@ -145,25 +134,19 @@ export default function ManageAppointmentsScreen() {
     setAppointments(prev => prev.map(apt => 
       apt.id === appointmentId ? { ...apt, status: 'in-progress' } : apt
     ));
-    Alert.alert('Consultation Started', 'Patient status updated to "In Progress"');
   };
 
   const handleCompleteAppointment = (appointmentId) => {
     setAppointments(prev => prev.map(apt => 
       apt.id === appointmentId ? { ...apt, status: 'completed' } : apt
     ));
-    Alert.alert('Appointment Completed', 'Slot auto-updated in system');
   };
 
-  const handleViewPatient = (patientId) => {
-    navigation.navigate('PatientDetails', { id: patientId });
-  };
-
-  const filteredAppointments = filter === 'today' 
+  const filteredAppointments = filter === 'all' 
     ? appointments
-    : filter === 'upcoming'
-    ? appointments.filter(apt => apt.status === 'confirmed')
-    : appointments;
+    : filter === 'today'
+    ? appointments
+    : appointments.filter(apt => apt.status === 'confirmed');
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -173,27 +156,27 @@ export default function ManageAppointmentsScreen() {
         style={styles.container}
         showsVerticalScrollIndicator={false}
       >
-        {/* HEADER SECTION */}
+        {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <View>
-              <Text style={styles.greeting}>Manage Appointments</Text>
-              <Text style={styles.subtitle}>Control and update patient bookings</Text>
+              <Text style={styles.title}>Manage Appointments</Text>
+              <Text style={styles.subtitle}>Control patient bookings</Text>
             </View>
-            <TouchableOpacity style={styles.headerButton}>
-              <Text style={styles.headerButtonText}>{appointments.length} Total</Text>
-            </TouchableOpacity>
+            <View style={styles.headerBadge}>
+              <Text style={styles.headerBadgeText}>{appointments.length} Total</Text>
+            </View>
           </View>
         </View>
 
-        {/* FILTER BUTTONS */}
+        {/* FILTERS */}
         <View style={styles.filterContainer}>
           <TouchableOpacity 
             style={[styles.filterButton, filter === 'all' && styles.filterActive]}
             onPress={() => setFilter('all')}
           >
             <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>
-              All Appointments
+              All
             </Text>
           </TouchableOpacity>
           
@@ -202,7 +185,7 @@ export default function ManageAppointmentsScreen() {
             onPress={() => setFilter('today')}
           >
             <Text style={[styles.filterText, filter === 'today' && styles.filterTextActive]}>
-              Today Only
+              Today
             </Text>
           </TouchableOpacity>
           
@@ -216,8 +199,8 @@ export default function ManageAppointmentsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* STATS OVERVIEW */}
-        <View style={styles.statsCard}>
+        {/* STATS */}
+        <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={styles.statNumber}>
               {appointments.filter(a => a.status === 'in-progress' || a.status === 'waiting').length}
@@ -241,141 +224,120 @@ export default function ManageAppointmentsScreen() {
         </View>
 
         {/* APPOINTMENTS LIST */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>
-            {filter === 'today' ? "Today's Appointments" : 
-             filter === 'upcoming' ? 'Upcoming Appointments' : 'All Appointments'}
-          </Text>
-          <Text style={styles.sectionCount}>{filteredAppointments.length}</Text>
-        </View>
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Appointments</Text>
+            <Text style={styles.sectionCount}>{filteredAppointments.length}</Text>
+          </View>
 
-        <View style={styles.appointmentsList}>
-          {filteredAppointments.map((appointment) => (
-            <View key={appointment.id} style={styles.appointmentCard}>
-              {/* Appointment Header */}
-              <View style={styles.appointmentHeader}>
-                <View style={styles.timeContainer}>
-                  <Ionicons name="time-outline" size={16} color="#64748B" />
-                  <Text style={styles.appointmentTime}>{appointment.time}</Text>
-                  <Text style={styles.durationText}>• {appointment.duration}</Text>
-                </View>
-                
-                <View style={[
-                  styles.statusBadge,
-                  { backgroundColor: `${getStatusColor(appointment.status)}20` }
-                ]}>
-                  <Ionicons 
-                    name={getStatusIcon(appointment.status)} 
-                    size={12} 
-                    color={getStatusColor(appointment.status)} 
-                  />
-                  <Text style={[
-                    styles.statusText,
-                    { color: getStatusColor(appointment.status) }
-                  ]}>
-                    {appointment.status.replace('-', ' ').toUpperCase()}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Patient Info */}
-              <TouchableOpacity 
-                style={styles.patientInfo}
-                onPress={() => handleViewPatient(appointment.patientId)}
-              >
-                <View style={styles.patientIcon}>
-                  <Ionicons name="person-circle-outline" size={24} color="#2563EB" />
-                </View>
-                <View style={styles.patientDetails}>
-                  <Text style={styles.patientName}>{appointment.patient}</Text>
-                  <Text style={styles.patientId}>{appointment.patientId}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color="#64748B" />
-              </TouchableOpacity>
-
-              {/* Appointment Details */}
-              <View style={styles.detailsRow}>
-                <View style={styles.detailItem}>
-                  <Ionicons name="medkit-outline" size={14} color="#64748B" />
-                  <Text style={styles.detailLabel}>Service:</Text>
-                  <Text style={styles.detailValue}>{appointment.service}</Text>
-                </View>
-                
-                <View style={styles.detailItem}>
-                  <Ionicons name="person-outline" size={14} color="#64748B" />
-                  <Text style={styles.detailLabel}>Doctor:</Text>
-                  <Text style={styles.detailValue}>{appointment.doctor}</Text>
-                </View>
-              </View>
-
-              {/* Notes */}
-              {appointment.notes ? (
-                <View style={styles.notesContainer}>
-                  <Ionicons name="document-text-outline" size={14} color="#64748B" />
-                  <Text style={styles.notesText}>{appointment.notes}</Text>
-                </View>
-              ) : null}
-
-              {/* Action Buttons */}
-              <View style={styles.actionButtons}>
-                {appointment.status === 'waiting' && (
-                  <TouchableOpacity 
-                    style={[styles.actionButton, styles.startButton]}
-                    onPress={() => handleStartConsultation(appointment.id)}
-                  >
-                    <Ionicons name="play-circle-outline" size={16} color="#FFFFFF" />
-                    <Text style={styles.startButtonText}>Start Consultation</Text>
-                  </TouchableOpacity>
-                )}
-                
-                {appointment.status === 'in-progress' && (
-                  <TouchableOpacity 
-                    style={[styles.actionButton, styles.completeButton]}
-                    onPress={() => handleCompleteAppointment(appointment.id)}
-                  >
-                    <Ionicons name="checkmark-circle-outline" size={16} color="#FFFFFF" />
-                    <Text style={styles.completeButtonText}>Complete</Text>
-                  </TouchableOpacity>
-                )}
-
-                <TouchableOpacity 
-                  style={[styles.actionButton, styles.rescheduleButton]}
-                  onPress={() => handleReschedule(appointment.id, appointment.patient)}
-                >
-                  <Ionicons name="calendar-outline" size={16} color="#2563EB" />
-                  <Text style={styles.rescheduleButtonText}>Reschedule</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity 
-                  style={[styles.actionButton, styles.cancelButton]}
-                  onPress={() => handleCancelAppointment(appointment.id, appointment.patient)}
-                >
-                  <Ionicons name="close-circle-outline" size={16} color="#EF4444" />
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
+          {filteredAppointments.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="calendar-outline" size={48} color="#CBD5E1" />
+              <Text style={styles.emptyStateText}>No appointments found</Text>
             </View>
-          ))}
+          ) : (
+            <View style={styles.appointmentsList}>
+              {filteredAppointments.map((appointment) => (
+                <View key={appointment.id} style={styles.appointmentCard}>
+                  {/* Time & Status */}
+                  <View style={styles.timeStatusRow}>
+                    <View style={styles.timeContainer}>
+                      <Ionicons name="time-outline" size={16} color="#64748B" />
+                      <Text style={styles.appointmentTime}>{appointment.time}</Text>
+                      <Text style={styles.durationText}>· {appointment.duration}</Text>
+                    </View>
+                    
+                    <View style={[
+                      styles.statusBadge,
+                      { backgroundColor: `${getStatusColor(appointment.status)}20` }
+                    ]}>
+                      <Text style={[
+                        styles.statusText,
+                        { color: getStatusColor(appointment.status) }
+                      ]}>
+                        {appointment.status.toUpperCase().replace('-', ' ')}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Patient Info */}
+                  <View style={styles.patientInfo}>
+                    <Text style={styles.patientName}>{appointment.patient}</Text>
+                    <Text style={styles.patientId}>{appointment.patientId}</Text>
+                    <Text style={styles.doctorText}>{appointment.doctor}</Text>
+                  </View>
+
+                  {/* Service */}
+                  <View style={styles.serviceContainer}>
+                    <Text style={styles.serviceText}>+ {appointment.service}</Text>
+                  </View>
+
+                  {/* Notes */}
+                  {appointment.notes ? (
+                    <View style={styles.notesContainer}>
+                      <Text style={styles.notesText}>[{appointment.notes}]</Text>
+                    </View>
+                  ) : null}
+
+                  {/* Action Buttons - ALWAYS 3 BUTTONS */}
+                  <View style={styles.actionButtons}>
+                    {/* First Action Button - Changes based on status */}
+                    {appointment.status === 'waiting' && (
+                      <TouchableOpacity 
+                        style={[styles.actionButton, styles.actionButtonPrimary]}
+                        onPress={() => handleStartConsultation(appointment.id)}
+                      >
+                        <Text style={styles.actionButtonText}>Start</Text>
+                      </TouchableOpacity>
+                    )}
+                    
+                    {appointment.status === 'in-progress' && (
+                      <TouchableOpacity 
+                        style={[styles.actionButton, styles.actionButtonPrimary]}
+                        onPress={() => handleCompleteAppointment(appointment.id)}
+                      >
+                        <Text style={styles.actionButtonText}>Complete</Text>
+                      </TouchableOpacity>
+                    )}
+                    
+                    {appointment.status === 'confirmed' && (
+                      <TouchableOpacity 
+                        style={[styles.actionButton, styles.actionButtonSecondary]}
+                        onPress={() => Alert.alert('Mark as Ready')}
+                      >
+                        <Text style={styles.actionButtonSecondaryText}>Ready</Text>
+                      </TouchableOpacity>
+                    )}
+                    
+                    {/* Reschedule Button - ALWAYS PRESENT */}
+                    <TouchableOpacity 
+                      style={[styles.actionButton, styles.actionButtonSecondary]}
+                      onPress={() => handleReschedule(appointment.id, appointment.patient)}
+                    >
+                      <Text style={styles.actionButtonSecondaryText}>Reschedule</Text>
+                    </TouchableOpacity>
+
+                    {/* Cancel Button - ALWAYS PRESENT */}
+                    <TouchableOpacity 
+                      style={[styles.actionButton, styles.actionButtonDanger]}
+                      onPress={() => handleCancelAppointment(appointment.id, appointment.patient)}
+                    >
+                      <Text style={styles.actionButtonDangerText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* AUTO-UPDATE INFO */}
         <View style={styles.infoCard}>
-          <View style={styles.infoHeader}>
-            <Ionicons name="sync-outline" size={20} color="#2563EB" />
-            <Text style={styles.infoTitle}>Slot Auto-Update System</Text>
-          </View>
-          <Text style={styles.infoText}>
-            ✅ Cancelled slots are automatically released for other students
-          </Text>
-          <Text style={styles.infoText}>
-            ✅ Status changes update in real-time across all devices
-          </Text>
-          <Text style={styles.infoText}>
-            ✅ Completed appointments free up the schedule instantly
-          </Text>
+          <Ionicons name="sync-outline" size={20} color="#2563EB" />
+          <Text style={styles.infoText}>Cancelled slots auto-release for other students</Text>
         </View>
 
-        <View style={styles.footerSpacing} />
+        <View style={styles.footer} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -396,17 +358,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F172A',
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 30,
+    paddingBottom: 24,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
   headerContent: {
     flexDirection: 'row',
-    marginTop: 30,
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    marginTop: 30,
   },
-  greeting: {
+  title: {
     color: 'white',
     fontSize: 24,
     fontWeight: '700',
@@ -416,13 +378,13 @@ const styles = StyleSheet.create({
     color: '#CBD5E1',
     fontSize: 14,
   },
-  headerButton: {
+  headerBadge: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 6,
     borderRadius: 20,
   },
-  headerButtonText: {
+  headerBadgeText: {
     color: 'white',
     fontSize: 12,
     fontWeight: '600',
@@ -436,7 +398,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   filterButton: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 20,
     backgroundColor: '#F1F5F9',
@@ -446,7 +408,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2563EB',
   },
   filterText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#64748B',
     fontWeight: '500',
   },
@@ -455,25 +417,21 @@ const styles = StyleSheet.create({
   },
   
   // STATS
-  statsCard: {
+  statsRow: {
+    flexDirection: 'row',
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 20,
     marginHorizontal: 20,
     marginBottom: 20,
-    flexDirection: 'row',
     justifyContent: 'space-between',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
   },
   statItem: {
     alignItems: 'center',
+    flex: 1,
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     color: '#1E293B',
     marginBottom: 4,
@@ -483,12 +441,14 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   
-  // SECTION HEADER
+  // SECTION
+  section: {
+    paddingHorizontal: 20,
+  },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
     marginBottom: 16,
   },
   sectionTitle: {
@@ -500,27 +460,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#64748B',
     backgroundColor: '#F1F5F9',
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
   
+  // EMPTY STATE
+  emptyState: {
+    alignItems: 'center',
+    padding: 40,
+    backgroundColor: 'white',
+    borderRadius: 12,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: '#64748B',
+    marginTop: 12,
+  },
+  
   // APPOINTMENTS LIST
   appointmentsList: {
-    paddingHorizontal: 20,
+    marginBottom: 20,
   },
   appointmentCard: {
     backgroundColor: 'white',
     borderRadius: 12,
-    padding: 16,
+    padding: 20,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
   },
-  appointmentHeader: {
+  
+  // TIME & STATUS
+  timeStatusRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -537,178 +507,125 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   durationText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#64748B',
     marginLeft: 4,
   },
   statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 12,
   },
   statusText: {
-    fontSize: 10,
-    fontWeight: '600',
-    marginLeft: 4,
+    fontSize: 11,
+    fontWeight: '700',
   },
   
   // PATIENT INFO
   patientInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  patientIcon: {
-    marginRight: 12,
-  },
-  patientDetails: {
-    flex: 1,
   },
   patientName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: '#1E293B',
     marginBottom: 2,
   },
   patientId: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#64748B',
+    marginBottom: 2,
+  },
+  doctorText: {
+    fontSize: 14,
+    color: '#2563EB',
+    fontWeight: '600',
   },
   
-  // DETAILS
-  detailsRow: {
-    flexDirection: 'row',
-    marginBottom: 12,
+  // SERVICE
+  serviceContainer: {
+    marginBottom: 8,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
-  detailItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: 12,
-  },
-  detailLabel: {
-    fontSize: 12,
-    color: '#64748B',
-    marginLeft: 6,
-    marginRight: 4,
-  },
-  detailValue: {
-    fontSize: 12,
+  serviceText: {
+    fontSize: 15,
     color: '#1E293B',
     fontWeight: '500',
   },
   
   // NOTES
   notesContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#F8FAFC',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    marginBottom: 16,
   },
   notesText: {
-    flex: 1,
-    marginLeft: 8,
-    fontSize: 12,
+    fontSize: 13,
     color: '#64748B',
     fontStyle: 'italic',
   },
   
-  // ACTION BUTTONS
+  // ACTION BUTTONS - FIXED: ALWAYS 3 BUTTONS
   actionButtons: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 8,
   },
   actionButton: {
-    flexDirection: 'row',
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    flex: 1,
-    minWidth: '48%',
   },
-  startButton: {
-    backgroundColor: '#F59E0B',
+  actionButtonPrimary: {
+    backgroundColor: '#2563EB',
   },
-  startButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
-    marginLeft: 6,
-  },
-  completeButton: {
-    backgroundColor: '#10B981',
-  },
-  completeButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
-    marginLeft: 6,
-  },
-  rescheduleButton: {
-    backgroundColor: '#EFF6FF',
+  actionButtonSecondary: {
+    backgroundColor: '#F1F5F9',
     borderWidth: 1,
-    borderColor: '#2563EB',
+    borderColor: '#E2E8F0',
   },
-  rescheduleButtonText: {
-    color: '#2563EB',
-    fontSize: 12,
-    fontWeight: '600',
-    marginLeft: 6,
-  },
-  cancelButton: {
+  actionButtonDanger: {
     backgroundColor: '#FEF2F2',
     borderWidth: 1,
-    borderColor: '#EF4444',
+    borderColor: '#FECACA',
   },
-  cancelButtonText: {
-    color: '#EF4444',
-    fontSize: 12,
+  actionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
     fontWeight: '600',
-    marginLeft: 6,
+  },
+  actionButtonSecondaryText: {
+    color: '#1E293B',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  actionButtonDangerText: {
+    color: '#EF4444',
+    fontSize: 14,
+    fontWeight: '600',
   },
   
   // INFO CARD
   infoCard: {
-    backgroundColor: '#F0F9FF',
-    borderRadius: 12,
-    padding: 20,
-    marginHorizontal: 20,
-    marginTop: 20,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#BAE6FD',
-  },
-  infoHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-  },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0C4A6E',
-    marginLeft: 8,
+    justifyContent: 'center',
+    padding: 16,
+    backgroundColor: '#F0F9FF',
+    marginHorizontal: 20,
+    borderRadius: 12,
+    marginTop: 8,
   },
   infoText: {
     fontSize: 13,
     color: '#0C4A6E',
-    marginBottom: 6,
-    lineHeight: 18,
+    marginLeft: 8,
+    fontWeight: '500',
   },
   
-  footerSpacing: {
-    height: 40,
+  // FOOTER
+  footer: {
+    height: 30,
   },
 });
