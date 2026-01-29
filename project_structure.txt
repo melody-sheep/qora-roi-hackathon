@@ -1,26 +1,25 @@
-QORA/
+QORA-ROI-HACKATHON/
 ├── .expo/
 ├── assets/
 ├── node_modules/
 ├── src/
-│   ├── api/
-│   │   └── supabase.js
-│   ├── components/
-│   │   ├── AuthCard.js
-│   │   ├── AuthInput.js
-│   │   ├── AuthButton.js
-│   │   ├── ParticlesBackground.js
 │   ├── screens/
+│   │   ├── clinic/
+│   │   │   ├── clinicDashboard.js
+│   │   │   ├──ManageAppointmentsScreen.js
+│   │   │   └── SetAvailabilityScreen.js
+│   │   ├── student/
+│   │   │   └── studentDashboard.js
 │   │   ├── LoginScreen.js
 │   │   └── RegisterScreen.js
 │   └── styles/
 │       └── authStyles.js
+├── .gitignore
+├── 30hrs_development_plan.txt
 ├── App.js
 ├── app.json
-├── index.js
-├── package.json
-├── package-lock.json
-├── .gitignore
 ├── detailed_interface_and_components.txt
-├── development_plan.txt
+├── index.js
+├── package-lock.json
+├── package.json
 └── project_structure.txt

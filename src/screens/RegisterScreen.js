@@ -19,13 +19,13 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker'; // Install: expo install expo-image-picker
-import * as DocumentPicker from 'expo-document-picker'; // Install: expo install expo-document-picker
+import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 
 export default function RegisterScreen() {
   const navigation = useNavigation();
 
-  const [role, setRole] = useState(null); // 'student' | 'doctor'
+  const [role, setRole] = useState(null);
   const [fullName, setFullName] = useState('');
   const [studentId, setStudentId] = useState('');
   const [clinicId, setClinicId] = useState('');
@@ -36,12 +36,10 @@ export default function RegisterScreen() {
   const [secureText1, setSecureText1] = useState(true);
   const [secureText2, setSecureText2] = useState(true);
   
-  // File attachment states
   const [attachedFile, setAttachedFile] = useState(null);
   const [fileModalVisible, setFileModalVisible] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  // Request permissions for file access
   const requestPermissions = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -61,7 +59,7 @@ export default function RegisterScreen() {
   const pickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'], // FIXED: Changed from MediaTypeOptions.Images
         allowsEditing: true,
         quality: 0.8,
       });
@@ -169,7 +167,6 @@ export default function RegisterScreen() {
     const fileSize = attachedFile.size;
     const fileType = attachedFile.type;
 
-    // Format file size
     const formatSize = (bytes) => {
       if (bytes < 1024) return bytes + ' B';
       if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
@@ -184,7 +181,6 @@ export default function RegisterScreen() {
   };
 
   const handleRegister = async () => {
-    // Validation checks
     if (!role || !fullName || !email || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
@@ -205,7 +201,6 @@ export default function RegisterScreen() {
       return;
     }
 
-    // Only require file for doctors
     if (role === 'doctor' && !attachedFile) {
       Alert.alert(
         'Verification Required',
@@ -217,7 +212,6 @@ export default function RegisterScreen() {
 
     setLoading(true);
 
-    // Prepare registration data
     const userData = {
       role,
       fullName,
@@ -230,7 +224,6 @@ export default function RegisterScreen() {
 
     console.log('Registration data:', userData);
 
-    // MOCK REGISTER (replace with Supabase later)
     setTimeout(() => {
       setLoading(false);
       Alert.alert(
@@ -242,7 +235,7 @@ export default function RegisterScreen() {
           text: 'OK',
           onPress: () => {
             if (role === 'doctor') {
-              navigation.navigate('ClinicDashboard');
+              navigation.navigate('ClinicMain'); // FIXED: Changed from 'ClinicDashboard'
             } else {
               navigation.navigate('StudentDashboard');
             }
@@ -268,7 +261,6 @@ export default function RegisterScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            {/* Logo */}
             <View style={styles.logoContainer}>
               <Image
                 source={require('../../assets/qora_logo.png')}
@@ -280,12 +272,10 @@ export default function RegisterScreen() {
               </Text>
             </View>
 
-            {/* Card */}
             <View style={styles.card}>
               <Text style={styles.title}>Create Account</Text>
               <Text style={styles.subtitle}>Join QORA in a few simple steps</Text>
 
-              {/* ROLE SELECTION */}
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Register As</Text>
                 <View style={styles.roleContainer}>
@@ -335,7 +325,6 @@ export default function RegisterScreen() {
                 </View>
               </View>
 
-              {/* FULL NAME */}
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Full Name</Text>
                 <View style={styles.inputWrapper}>
@@ -350,7 +339,6 @@ export default function RegisterScreen() {
                 </View>
               </View>
 
-              {/* STUDENT ID (STUDENT ONLY) */}
               {role === 'student' && (
                 <View style={styles.inputContainer}>
                   <Text style={styles.label}>Student ID</Text>
@@ -368,7 +356,6 @@ export default function RegisterScreen() {
                 </View>
               )}
 
-              {/* CLINIC ID (DOCTOR ONLY) */}
               {role === 'doctor' && (
                 <View style={styles.inputContainer}>
                   <Text style={styles.label}>Clinic / License ID</Text>
@@ -385,7 +372,6 @@ export default function RegisterScreen() {
                 </View>
               )}
 
-              {/* EMAIL */}
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Email Address</Text>
                 <View style={styles.inputWrapper}>
@@ -402,7 +388,6 @@ export default function RegisterScreen() {
                 </View>
               </View>
 
-              {/* PASSWORD */}
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Password</Text>
                 <View style={styles.inputWrapper}>
@@ -425,7 +410,6 @@ export default function RegisterScreen() {
                 </View>
               </View>
 
-              {/* CONFIRM PASSWORD */}
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Confirm Password</Text>
                 <View style={styles.inputWrapper}>
@@ -452,7 +436,6 @@ export default function RegisterScreen() {
                 )}
               </View>
 
-              {/* FILE ATTACHMENT FOR VERIFICATION */}
               <View style={styles.inputContainer}>
                 <View style={styles.fileHeader}>
                   <Text style={styles.label}>
@@ -520,7 +503,6 @@ export default function RegisterScreen() {
                 </Text>
               </View>
 
-              {/* REGISTER BUTTON */}
               <TouchableOpacity
                 style={[
                   styles.button,
@@ -539,7 +521,6 @@ export default function RegisterScreen() {
                 )}
               </TouchableOpacity>
 
-              {/* LOGIN LINK */}
               <View style={styles.loginContainer}>
                 <Text style={styles.loginText}>Already have an account?</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('Login')}>
@@ -550,7 +531,6 @@ export default function RegisterScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
 
-        {/* File Picker Modal */}
         <Modal
           animationType="slide"
           transparent={true}
@@ -607,8 +587,6 @@ export default function RegisterScreen() {
   );
 }
 
-/* ===================== STYLES ===================== */
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0F172A' },
   scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 20, paddingBottom: 40 },
@@ -645,8 +623,6 @@ const styles = StyleSheet.create({
   roleText: { fontWeight: '600', color: '#64748B' },
   roleTextSelected: { color: '#2563EB' },
   errorText: { color: '#EF4444', fontSize: 12, marginTop: 6 },
-  
-  // File attachment styles
   fileHeader: { marginBottom: 12 },
   fileInfoText: { fontSize: 12, color: '#64748B', marginTop: 2 },
   attachButton: {
@@ -734,7 +710,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
-  
   button: {
     backgroundColor: '#2563EB',
     padding: 16,
@@ -749,8 +724,6 @@ const styles = StyleSheet.create({
   loginContainer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
   loginText: { color: '#64748B' },
   loginLink: { color: '#2563EB', fontWeight: '600' },
-  
-  // Modal styles
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
