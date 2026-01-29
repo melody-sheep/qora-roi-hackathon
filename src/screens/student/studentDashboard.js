@@ -53,8 +53,8 @@ export default function StudentDashboardScreen() {
     },
     recentActivity: [
       { id: '1', date: 'Jan 30', action: 'Dental appointment booked', type: 'booking' },
-      { id: '2', date: 'Dec 5', action: 'CoR document uploaded', type: 'upload' },
-      { id: '3', date: 'Dec 6', action: 'Medical consultation completed', type: 'completed' },
+      { id: '3', date: 'Dec 5', action: 'CoR document uploaded', type: 'upload' },
+      { id: '2', date: 'Dec 6', action: 'Medical consultation completed', type: 'completed' },
       { id: '4', date: 'Dec 1', action: 'Account verified', type: 'verification' },
     ],
     availableSlots: {

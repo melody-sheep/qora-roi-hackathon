@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 // Import the existing student dashboard (this file exists)
 import StudentDashboard from '../screens/student/studentDashboard';
+import StudentBooking from '../screens/student/studentBooking';
+import StudentAppointment from '../screens/student/studentAppointment';
 
 // These screens will be created by your teammate
 // For now, we'll create minimal placeholder components so navigation works
@@ -55,14 +57,14 @@ const StudentBottomTabs = () => {
       />
       <Tab.Screen 
         name="Book" 
-        component={BookingScreen}
+        component={StudentBooking}
         options={{
           tabBarLabel: 'Book',
         }}
       />
       <Tab.Screen 
         name="Appointments" 
-        component={AppointmentScreen}
+        component={StudentAppointment}
         options={{
           tabBarLabel: 'Appointments',
         }}
