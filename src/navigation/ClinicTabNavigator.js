@@ -44,17 +44,17 @@ const ClinicTabNavigator = () => {
       <Tab.Screen 
         name="Dashboard" 
         component={ClinicDashboard}
-        options={{ headerTitle: 'Clinic Dashboard' }}
+        options={{ headerShown: false }}
       />
       <Tab.Screen 
         name="Appointments" 
         component={ManageAppointmentsScreen}
-        options={{ headerTitle: 'Manage Appointments' }}
+        options={{ headerShown: false }}
       />
       <Tab.Screen 
         name="Availability" 
         component={SetAvailabilityScreen}
-        options={{ headerTitle: 'Set Availability' }}
+        options={{ headerShown: false }}
       />
     </Tab.Navigator>
   );
