@@ -44,8 +44,10 @@ export default function AuthInput({
           autoCapitalize={autoCapitalize}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          editable={true}  // Make sure it's editable
-          selectTextOnFocus={true}  // Allow text selection
+          editable={true}
+          selectTextOnFocus={true}
+          autoCorrect={false}
+          spellCheck={false}
           {...props}
         />
         {secureTextEntry && (
@@ -111,7 +113,10 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     fontSize: 16,
     color: '#1E293B',
-    minHeight: 50,  // Better touch target
+    minHeight: 50,
+    includeFontPadding: false,
+    paddingTop: 0,
+    paddingBottom: 0,
   },
   inputWithIcon: {
     paddingLeft: 0,

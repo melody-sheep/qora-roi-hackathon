@@ -3,14 +3,15 @@ import { View, StyleSheet, Dimensions, Animated } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 
-export default function ParticlesBackground() {
+function ParticlesBackground({ count = 20 }) {
+  // Use a smaller default count for performance
   const particles = useRef(
-    Array.from({ length: 50 }).map(() => ({  // Increased from 30 to 50
+    Array.from({ length: count }).map(() => ({
       x: Math.random() * width,
       y: Math.random() * height,
-      size: Math.random() * 6 + 2,  // Increased size
-      speed: Math.random() * 1 + 0.5,  // Increased speed
-      opacity: Math.random() * 0.5 + 0.3,  // Increased opacity
+      size: Math.random() * 4 + 2,
+      speed: Math.random() * 0.8 + 0.3,
+      opacity: Math.random() * 0.4 + 0.2,
     }))
   ).current;
 
@@ -18,30 +19,45 @@ export default function ParticlesBackground() {
     particles.map(() => new Animated.Value(0))
   ).current;
 
+  // Keep references to the loop animations so we can stop them on unmount
+  const loops = useRef([]);
+
   useEffect(() => {
     particles.forEach((_, index) => {
       // Random starting point
       animations[index].setValue(Math.random());
       
-      Animated.loop(
+      const loop = Animated.loop(
         Animated.sequence([
           Animated.timing(animations[index], {
             toValue: 1,
-            duration: Math.random() * 3000 + 2000,
+            duration: Math.random() * 2500 + 1500,
             useNativeDriver: true,
           }),
           Animated.timing(animations[index], {
             toValue: 0,
-            duration: Math.random() * 3000 + 2000,
+            duration: Math.random() * 2500 + 1500,
             useNativeDriver: true,
           }),
         ])
-      ).start();
+      );
+
+      loops.current.push(loop);
+      loop.start();
     });
-  }, []);
+
+    return () => {
+      // Stop all running loops on unmount to avoid leftover animations
+      loops.current.forEach(l => l.stop());
+      loops.current = [];
+    };
+  }, [count, animations, particles]);
+
+  // Prevent touches from being intercepted by the background
+  const containerPointerEvents = 'none';
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} pointerEvents={containerPointerEvents}>
       {/* Background gradient */}
       <View style={styles.gradientBackground} />
       
@@ -104,3 +120,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
 });
+
+ParticlesBackground.displayName = 'ParticlesBackground';
+
+export default React.memo(ParticlesBackground);

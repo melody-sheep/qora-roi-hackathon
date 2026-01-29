@@ -10,6 +10,7 @@ import {
   Image,
   Animated,
   TouchableOpacity,
+  StatusBar,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as Animatable from 'react-native-animatable';
@@ -213,16 +214,20 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
       <ParticlesBackground />
       
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces={false}
         >
           <View style={styles.content}>
             {/* Logo Section with Fade Animation */}
@@ -238,7 +243,7 @@ export default function LoginScreen() {
                 duration={1000}
                 style={styles.tagline}
               >
-                Queue with clarity
+                Healthcare access with clarity and dignity
               </Animatable.Text>
             </Animated.View>
 
@@ -270,7 +275,7 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -279,25 +284,23 @@ const styles = {
     flex: 1,
     backgroundColor: '#0F172A',
   },
-  safeArea: {
-    flex: 1,
-  },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'flex-end',
-    paddingBottom: 20,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
   },
   content: {
-    minHeight: '100%',
+    flex: 1,
     justifyContent: 'flex-end',
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
   },
   logoContainer: {
     alignItems: 'center',
     marginBottom: 40,
-    marginTop: 60,
+    marginTop: 20,
   },
   logo: {
     width: 140,
@@ -312,9 +315,12 @@ const styles = {
     marginBottom: 8,
   },
   tagline: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#94A3B8',
     fontWeight: '500',
+    textAlign: 'center',
+    paddingHorizontal: 40,
+    lineHeight: 20,
   },
   stepIndicator: {
     flexDirection: 'row',
