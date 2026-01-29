@@ -6,6 +6,7 @@ import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import ClinicDashboard from './src/screens/clinic/clinicDashboard';
 import StudentDashboard from './src/screens/student/studentDashboard';
+import StudentBooking from './src/screens/student/studentBooking';
 
 const Stack = createStackNavigator();
 
@@ -40,6 +41,11 @@ export default function App() {
           <Stack.Screen 
             name="StudentDashboard"
             component={StudentDashboard}
+            options={{ animationEnabled: false }}
+          />
+          <Stack.Screen 
+            name="StudentBooking"
+            component={StudentBooking}
             options={{ animationEnabled: false }}
           />
         </Stack.Navigator>
