@@ -244,7 +244,7 @@ export default function RegisterScreen() {
             if (role === 'doctor') {
               navigation.navigate('ClinicDashboard');
             } else {
-              navigation.navigate('Login');
+              navigation.navigate('StudentDashboard');
             }
           },
         }]
