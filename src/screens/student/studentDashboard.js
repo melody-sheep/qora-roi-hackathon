@@ -52,9 +52,9 @@ export default function StudentDashboardScreen() {
       completionRate: '100%',
     },
     recentActivity: [
-      { id: '1', date: 'Dec 10', action: 'Dental appointment booked', type: 'booking' },
-      { id: '2', date: 'Dec 8', action: 'CoR document uploaded', type: 'upload' },
-      { id: '3', date: 'Dec 5', action: 'Medical consultation completed', type: 'completed' },
+      { id: '1', date: 'Jan 30', action: 'Dental appointment booked', type: 'booking' },
+      { id: '2', date: 'Dec 5', action: 'CoR document uploaded', type: 'upload' },
+      { id: '3', date: 'Dec 6', action: 'Medical consultation completed', type: 'completed' },
       { id: '4', date: 'Dec 1', action: 'Account verified', type: 'verification' },
     ],
     availableSlots: {
@@ -62,8 +62,7 @@ export default function StudentDashboardScreen() {
       dental: 1,
     },
     notifications: [
-      { id: '1', message: 'Your CoR needs updating', type: 'warning', read: false },
-      { id: '2', message: 'Appointment reminder tomorrow', type: 'reminder', read: false },
+      { id: '1', message: 'Appointment reminder tomorrow', type: 'reminder', read: false },
     ],
     progress: {
       completed: 2,
@@ -388,7 +387,7 @@ export default function StudentDashboardScreen() {
             <View style={styles.appointmentActions}>
               <TouchableOpacity 
                 style={styles.viewButton}
-                onPress={() => navigation.navigate('AppointmentDetails', { id: nextAppointment.id })}
+                onPress={() => navigation.navigate('StudentAppointment', { id: nextAppointment.id })}
               >
                 <Text style={styles.viewButtonText}>View Details</Text>
               </TouchableOpacity>

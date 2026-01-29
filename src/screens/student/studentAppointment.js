@@ -34,8 +34,8 @@ export default function StudentAppointment() {
       doctorSpecialty: 'Dentist',
       doctorImage: 'https://randomuser.me/api/portraits/women/45.jpg',
       service: 'Dental Check-up',
-      date: '2026-01-31',
-      time: '09:00 AM - 09:30 AM',
+      date: '2026-02-8',
+      time: '02:00 PM - 02:30 PM',
       status: 'confirmed',
       location: 'USTP Medical and Dental Clinic',
       duration: '30 minutes',
@@ -400,66 +400,59 @@ export default function StudentAppointment() {
       </View>
 
       {/* FILTERS */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        style={styles.filtersScroll}
-        contentContainerStyle={styles.filtersContainer}
-      >
+      <View style={styles.filtersContainer}>
         {filters.map((filter) => (
-          <TouchableOpacity
+            <TouchableOpacity
             key={filter.id}
             style={[
-              styles.filterButton,
-              selectedFilter === filter.id && styles.filterButtonActive,
+                styles.filterButton,
+                selectedFilter === filter.id && styles.filterButtonActive,
             ]}
             onPress={() => setSelectedFilter(filter.id)}
-          >
+            >
             <Ionicons 
-              name={filter.icon} 
-              size={18} 
-              color={selectedFilter === filter.id ? '#2563EB' : '#64748B'} 
+                name={filter.icon} 
+                size={18} 
+                color={selectedFilter === filter.id ? '#2563EB' : '#64748B'} 
             />
             <Text style={[
-              styles.filterText,
-              selectedFilter === filter.id && styles.filterTextActive,
+                styles.filterText,
+                selectedFilter === filter.id && styles.filterTextActive,
             ]}>
-              {filter.label}
+                {filter.label}
             </Text>
-          </TouchableOpacity>
+            </TouchableOpacity>
         ))}
-      </ScrollView>
+        </View>
 
       {/* APPOINTMENTS LIST */}
-      <FlatList
-        data={filteredAppointments}
-        renderItem={renderAppointmentCard}
-        keyExtractor={(item) => item.id}
+      <ScrollView
+        style={styles.appointmentsContainer}
         contentContainerStyle={styles.appointmentsList}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl
+            <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
             colors={['#2563EB']}
-          />
+            />
         }
-        ListHeaderComponent={
-          <View style={styles.listHeader}>
+        >
+        <View style={styles.listHeader}>
             <Text style={styles.listTitle}>
-              {filteredAppointments.length} {selectedFilter === 'all' ? 'Appointments' : selectedFilter === 'upcoming' ? 'Upcoming' : selectedFilter === 'past' ? 'Past' : 'Cancelled'}
+            {filteredAppointments.length} {selectedFilter === 'all' ? 'Appointments' : selectedFilter === 'upcoming' ? 'Upcoming' : selectedFilter === 'past' ? 'Past' : 'Cancelled'}
             </Text>
             <Text style={styles.listSubtitle}>
-              Tap on any appointment to view details
+            Tap on any appointment to view details
             </Text>
-          </View>
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
+        </View>
+
+        {filteredAppointments.length === 0 ? (
+            <View style={styles.emptyState}>
             <Ionicons name="calendar-outline" size={64} color="#CBD5E1" />
             <Text style={styles.emptyStateTitle}>No Appointments</Text>
             <Text style={styles.emptyStateText}>
-              {selectedFilter === 'upcoming' 
+                {selectedFilter === 'upcoming' 
                 ? "You don't have any upcoming appointments."
                 : selectedFilter === 'past'
                 ? "You don't have any past appointments."
@@ -468,15 +461,21 @@ export default function StudentAppointment() {
                 : "You don't have any appointments yet."}
             </Text>
             <TouchableOpacity 
-              style={styles.emptyStateButton}
-              onPress={() => navigation.navigate('StudentBooking')}
+                style={styles.emptyStateButton}
+                onPress={() => navigation.navigate('StudentBooking')}
             >
-              <Ionicons name="add-circle" size={20} color="white" />
-              <Text style={styles.emptyStateButtonText}>Book Appointment</Text>
+                <Ionicons name="add-circle" size={20} color="white" />
+                <Text style={styles.emptyStateButtonText}>Book Appointment</Text>
             </TouchableOpacity>
-          </View>
-        }
-      />
+            </View>
+        ) : (
+            filteredAppointments.map((appointment) => (
+            <View key={appointment.id} style={styles.appointmentCardWrapper}>
+                {renderAppointmentCard({ item: appointment })}
+            </View>
+            ))
+        )}
+        </ScrollView>
 
       {/* APPOINTMENT DETAILS MODAL */}
       <Modal
@@ -760,7 +759,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   filtersContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 8,
+    gap: 10,
   },
   filterButton: {
     flexDirection: 'row',
@@ -769,9 +773,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: '#F1F5F9',
     borderRadius: 20,
-    marginRight: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    minWidth: 100,
+    flexShrink: 1,
   },
   filterButtonActive: {
     backgroundColor: '#EFF6FF',
