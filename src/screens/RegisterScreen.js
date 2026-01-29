@@ -238,7 +238,16 @@ export default function RegisterScreen() {
         attachedFile 
           ? 'Account created! Your verification is under review (24-48 hours).'
           : 'Account created successfully!',
-        [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+        [{
+          text: 'OK',
+          onPress: () => {
+            if (role === 'doctor') {
+              navigation.navigate('ClinicDashboard');
+            } else {
+              navigation.navigate('Login');
+            }
+          },
+        }]
       );
     }, 1500);
   };
@@ -320,7 +329,7 @@ export default function RegisterScreen() {
                         role === 'doctor' && styles.roleTextSelected,
                       ]}
                     >
-                      Doctor
+                      Clinic
                     </Text>
                   </TouchableOpacity>
                 </View>
