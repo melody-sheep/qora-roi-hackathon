@@ -15,6 +15,8 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
+
+
 const { width } = Dimensions.get('window');
 
 export default function ClinicDashboard() {
