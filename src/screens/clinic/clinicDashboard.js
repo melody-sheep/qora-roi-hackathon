@@ -98,18 +98,8 @@ export default function ClinicDashboard() {
       case 'completed': return '#10B981';
       case 'in-progress': return '#F59E0B';
       case 'waiting': return '#3B82F6';
-      case 'scheduled': return '#6B7280';
-      default: return '#6B7280';
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'completed': return 'checkmark-circle';
-      case 'in-progress': return 'time-outline';
-      case 'waiting': return 'person-outline';
-      case 'scheduled': return 'calendar-outline';
-      default: return 'help-circle';
+      case 'scheduled': return '#94A3B8';
+      default: return '#94A3B8';
     }
   };
 
@@ -127,7 +117,7 @@ export default function ClinicDashboard() {
       'This feature will allow you to add priority slots for urgent cases.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Continue', onPress: () => console.log('Add emergency slot') },
+        { text: 'Continue', onPress: () => navigation.navigate('EmergencySlots') },
       ]
     );
   };
@@ -163,14 +153,10 @@ export default function ClinicDashboard() {
       >
         {/* HEADER SECTION */}
         <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <View style={styles.headerTextContainer}>
+          <View style={styles.headerTop}>
+            <View>
               <Text style={styles.greeting}>Good morning,</Text>
-              <Text style={styles.doctorName} numberOfLines={1} ellipsizeMode="tail">
-                {clinicData.doctorName}
-              </Text>
-              <Text style={styles.dateTime}>{formattedDate}</Text>
-              <Text style={styles.currentTime}>Current time: {currentTime}</Text>
+              <Text style={styles.doctorName}>{clinicData.doctorName}</Text>
             </View>
             <View style={styles.clinicStatusIndicator}>
               <View style={[
@@ -182,223 +168,227 @@ export default function ClinicDashboard() {
               </Text>
             </View>
           </View>
+          <Text style={styles.dateTime}>{formattedDate}</Text>
+          <Text style={styles.currentTime}>Current time: {currentTime}</Text>
         </View>
 
         {/* TODAY'S OVERVIEW STATS */}
-        <View style={styles.statsSection}>
+        <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Today's Overview</Text>
             <TouchableOpacity>
-              <Text style={styles.viewAllText}>View Details</Text>
+              <Text style={styles.viewAllText}>Details</Text>
             </TouchableOpacity>
           </View>
           
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
               <Text style={styles.statNumber}>{clinicData.todayStats.totalAppointments}</Text>
-              <Text style={styles.statLabel} numberOfLines={1}>Total</Text>
+              <Text style={styles.statLabel}>Total</Text>
             </View>
             
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{clinicData.todayStats.completed}</Text>
-              <Text style={styles.statLabel} numberOfLines={1}>Completed</Text>
+            <View style={[styles.statCard, styles.statCardPrimary]}>
+              <Text style={[styles.statNumber, { color: '#10B981' }]}>{clinicData.todayStats.completed}</Text>
+              <Text style={styles.statLabel}>Completed</Text>
             </View>
             
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{clinicData.todayStats.inProgress}</Text>
-              <Text style={styles.statLabel} numberOfLines={1}>In Progress</Text>
+            <View style={[styles.statCard, styles.statCardPrimary]}>
+              <Text style={[styles.statNumber, { color: '#F59E0B' }]}>{clinicData.todayStats.inProgress}</Text>
+              <Text style={styles.statLabel}>In Progress</Text>
             </View>
             
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{clinicData.todayStats.waiting}</Text>
-              <Text style={styles.statLabel} numberOfLines={1}>Waiting</Text>
+            <View style={[styles.statCard, styles.statCardPrimary]}>
+              <Text style={[styles.statNumber, { color: '#3B82F6' }]}>{clinicData.todayStats.waiting}</Text>
+              <Text style={styles.statLabel}>Waiting</Text>
             </View>
             
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{clinicData.todayStats.availableSlots}</Text>
-              <Text style={styles.statLabel} numberOfLines={1}>Available</Text>
+            <View style={[styles.statCard, styles.statCardSuccess]}>
+              <Text style={[styles.statNumber, { color: '#10B981' }]}>{clinicData.todayStats.availableSlots}</Text>
+              <Text style={styles.statLabel}>Available</Text>
             </View>
             
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{clinicData.todayStats.cancellations}</Text>
-              <Text style={styles.statLabel} numberOfLines={1}>Cancelled</Text>
+            <View style={[styles.statCard, styles.statCardError]}>
+              <Text style={[styles.statNumber, { color: '#EF4444' }]}>{clinicData.todayStats.cancellations}</Text>
+              <Text style={styles.statLabel}>Cancelled</Text>
             </View>
           </View>
         </View>
 
-        {/* QUICK ACCESS TO AVAILABILITY SETUP */}
-        <View style={styles.sectionHeader}>
+        {/* QUICK ACTIONS */}
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
-        </View>
-        
-        <View style={styles.actionsGrid}>
-          <TouchableOpacity 
-            style={styles.actionBox}
-            onPress={handleSetAvailability}
-          >
-            <View style={[styles.actionIcon, { backgroundColor: '#EFF6FF' }]}>
-              <Ionicons name="calendar-outline" size={24} color="#2563EB" />
-            </View>
-            <Text style={styles.actionText} numberOfLines={2} adjustsFontSizeToFit>
-              Set Availability
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.actionBox}
-            onPress={handleViewQueue}
-          >
-            <View style={[styles.actionIcon, { backgroundColor: '#F0F9FF' }]}>
-              <Ionicons name="people-outline" size={24} color="#0EA5E9" />
-            </View>
-            <Text style={styles.actionText} numberOfLines={2} adjustsFontSizeToFit>
-              Today's Queue
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.actionBox}
-            onPress={handleAddEmergencySlot}
-          >
-            <View style={[styles.actionIcon, { backgroundColor: '#FEF3C7' }]}>
-              <Ionicons name="medical-outline" size={24} color="#F59E0B" />
-            </View>
-            <Text style={styles.actionText} numberOfLines={2} adjustsFontSizeToFit>
-              Emergency Slot
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.actionBox}
-            onPress={handleSendAnnouncement}
-          >
-            <View style={[styles.actionIcon, { backgroundColor: '#ECFDF5' }]}>
-              <Ionicons name="megaphone-outline" size={24} color="#10B981" />
-            </View>
-            <Text style={styles.actionText} numberOfLines={2} adjustsFontSizeToFit>
-              Send Announcement
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.actionsGrid}>
+            <TouchableOpacity 
+              style={styles.actionCard}
+              onPress={handleSetAvailability}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: '#EFF6FF' }]}>
+                <Ionicons name="calendar-outline" size={22} color="#2563EB" />
+              </View>
+              <Text style={styles.actionText}>Set Availability</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.actionCard}
+              onPress={handleViewQueue}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: '#F0FDF4' }]}>
+                <Ionicons name="people-outline" size={22} color="#16A34A" />
+              </View>
+              <Text style={styles.actionText}>Today's Queue</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.actionCard}
+              onPress={handleAddEmergencySlot}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: '#FEF3C7' }]}>
+                <Ionicons name="medical-outline" size={22} color="#F59E0B" />
+              </View>
+              <Text style={styles.actionText}>Emergency Slot</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.actionCard}
+              onPress={handleSendAnnouncement}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: '#F0F9FF' }]}>
+                <Ionicons name="megaphone-outline" size={22} color="#0EA5E9" />
+              </View>
+              <Text style={styles.actionText}>Send Announcement</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* TODAY'S SCHEDULE - Main Focus */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Today's Schedule</Text>
-          <TouchableOpacity onPress={handleViewQueue}>
-            <Text style={styles.viewAllText}>View All ({clinicData.todaySchedule.length})</Text>
-          </TouchableOpacity>
-        </View>
-        
-        <View style={styles.scheduleCard}>
-          {clinicData.todaySchedule.slice(0, 4).map((appointment) => (
-            <View key={appointment.id} style={styles.appointmentItem}>
-              <View style={styles.appointmentTimeContainer}>
-                <Text style={styles.appointmentTime}>{appointment.time}</Text>
-              </View>
-              
-              <View style={styles.appointmentDetails}>
-                <Text style={styles.patientName} numberOfLines={1}>
-                  {appointment.patient}
-                </Text>
-                <View style={styles.appointmentMeta}>
-                  <Text style={styles.serviceText} numberOfLines={1}>
-                    {appointment.service}
+        {/* TODAY'S SCHEDULE */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Today's Schedule</Text>
+            <TouchableOpacity onPress={handleViewQueue}>
+              <Text style={styles.viewAllText}>View All</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.scheduleCard}>
+            {clinicData.todaySchedule.slice(0, 4).map((appointment) => (
+              <View key={appointment.id} style={styles.appointmentItem}>
+                <View style={styles.appointmentTimeContainer}>
+                  <Text style={styles.appointmentTime}>{appointment.time}</Text>
+                </View>
+                
+                <View style={styles.appointmentDetails}>
+                  <Text style={styles.patientName}>{appointment.patient}</Text>
+                  <Text style={styles.serviceText}>{appointment.service}</Text>
+                </View>
+                
+                <View style={[
+                  styles.statusBadge,
+                  { backgroundColor: `${getStatusColor(appointment.status)}15` }
+                ]}>
+                  <View style={[
+                    styles.statusDotSmall,
+                    { backgroundColor: getStatusColor(appointment.status) }
+                  ]} />
+                  <Text style={[
+                    styles.statusBadgeText,
+                    { color: getStatusColor(appointment.status) }
+                  ]}>
+                    {appointment.status.replace('-', ' ')}
                   </Text>
-                  <Text style={styles.doctorText} numberOfLines={1}>
-                    • {appointment.doctor}
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* CLINIC INFORMATION - FIXED */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Clinic Information</Text>
+          <View style={styles.infoCard}>
+            {/* Clinic Hours Row */}
+            <View style={styles.infoRow}>
+              <View style={styles.infoItem}>
+                <Ionicons name="time-outline" size={18} color="#64748B" style={styles.infoIcon} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Clinic Hours</Text>
+                  <Text style={styles.infoValue}>
+                    {clinicData.clinicHours.open} - {clinicData.clinicHours.close}
                   </Text>
                 </View>
               </View>
               
-              <View style={[
-                styles.statusBadge,
-                { backgroundColor: `${getStatusColor(appointment.status)}20` }
-              ]}>
-                <Ionicons 
-                  name={getStatusIcon(appointment.status)} 
-                  size={12} 
-                  color={getStatusColor(appointment.status)} 
-                />
-                <Text style={[
-                  styles.statusBadgeText,
-                  { color: getStatusColor(appointment.status) }
-                ]} numberOfLines={1}>
-                  {appointment.status.replace('-', ' ').toUpperCase()}
-                </Text>
+              <View style={styles.infoDivider} />
+              
+              <View style={styles.infoItem}>
+                <Ionicons name="calendar-outline" size={18} color="#64748B" style={styles.infoIcon} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Next Opening</Text>
+                  <Text style={styles.infoValue}>
+                    {clinicData.clinicHours.nextOpening}
+                  </Text>
+                </View>
               </View>
             </View>
-          ))}
-        </View>
-
-        {/* CLINIC HOURS AND CAPACITY */}
-        <View style={styles.infoCard}>
-          <View style={styles.infoRow}>
-            <View style={styles.infoItem}>
-              <Ionicons name="time-outline" size={16} color="#2563EB" />
-              <Text style={styles.infoLabel}>Hours:</Text>
-              <Text style={styles.infoValue} numberOfLines={1}>
-                {clinicData.clinicHours.open} - {clinicData.clinicHours.close}
-              </Text>
-            </View>
             
-            <View style={styles.infoItem}>
-              <Ionicons name="calendar-outline" size={16} color="#2563EB" />
-              <Text style={styles.infoLabel}>Next:</Text>
-              <Text style={styles.infoValue} numberOfLines={1}>
-                {clinicData.clinicHours.nextOpening}
-              </Text>
+            {/* Capacity Summary */}
+            <View style={styles.capacityContainer}>
+              <View style={styles.capacityItem}>
+                <Text style={styles.capacityNumber}>{clinicData.todayStats.availableSlots}</Text>
+                <Text style={styles.capacityLabel}>Available Slots</Text>
+              </View>
+              
+              <View style={styles.capacityDivider} />
+              
+              <View style={styles.capacityItem}>
+                <Text style={styles.capacityNumber}>{clinicData.todayStats.totalAppointments}</Text>
+                <Text style={styles.capacityLabel}>Total Booked</Text>
+              </View>
+              
+              <View style={styles.capacityDivider} />
+              
+              <View style={styles.capacityItem}>
+                <Text style={styles.capacityNumber}>{clinicData.todayStats.waiting}</Text>
+                <Text style={styles.capacityLabel}>Currently Waiting</Text>
+              </View>
             </View>
-          </View>
-          
-          <View style={styles.capacityInfo}>
-            <Ionicons name="information-circle-outline" size={14} color="#0C4A6E" />
-            <Text style={styles.capacityText} numberOfLines={1}>
-              {clinicData.todayStats.availableSlots} slots available • {clinicData.todayStats.totalAppointments} booked
-            </Text>
           </View>
         </View>
 
         {/* LIVE UPDATES */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Live Updates</Text>
-        </View>
-        
-        <View style={styles.updatesCard}>
-          {clinicData.quickUpdates.map((update) => (
-            <View key={update.id} style={styles.updateItem}>
-              <Ionicons 
-                name={update.type === 'booking' ? 'add-circle-outline' : 
-                      update.type === 'cancellation' ? 'remove-circle-outline' : 'alert-circle-outline'} 
-                size={14} 
-                color="#64748B" 
-              />
-              <View style={styles.updateContent}>
-                <Text style={styles.updateMessage} numberOfLines={2}>
-                  {update.message}
-                </Text>
-                <Text style={styles.updateTime}>{update.time}</Text>
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Live Updates</Text>
+            <TouchableOpacity>
+              <Text style={styles.viewAllText}>View All</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.updatesCard}>
+            {clinicData.quickUpdates.map((update) => (
+              <View key={update.id} style={styles.updateItem}>
+                <View style={[
+                  styles.updateIcon,
+                  { backgroundColor: update.type === 'booking' ? '#D1FAE5' : 
+                                 update.type === 'cancellation' ? '#FEE2E2' : '#DBEAFE' }
+                ]}>
+                  <Ionicons 
+                    name={update.type === 'booking' ? 'add' : 
+                          update.type === 'cancellation' ? 'remove' : 'alert'} 
+                    size={14} 
+                    color={update.type === 'booking' ? '#10B981' : 
+                           update.type === 'cancellation' ? '#EF4444' : '#3B82F6'} 
+                  />
+                </View>
+                <View style={styles.updateContent}>
+                  <Text style={styles.updateMessage}>{update.message}</Text>
+                  <Text style={styles.updateTime}>{update.time}</Text>
+                </View>
               </View>
-            </View>
-          ))}
-        </View>
-
-        {/* SYSTEM STATUS */}
-        <View style={styles.systemStatus}>
-          <View style={styles.systemStatusItem}>
-            <Ionicons name="shield-checkmark-outline" size={14} color="#6B7280" />
-            <Text style={styles.systemStatusText} numberOfLines={1}>
-              System: Operational
-            </Text>
-          </View>
-          <View style={styles.systemStatusItem}>
-            <Ionicons name="sync-outline" size={14} color="#6B7280" />
-            <Text style={styles.systemStatusText} numberOfLines={1}>
-              Updated: Just now
-            </Text>
+            ))}
           </View>
         </View>
 
-        {/* Footer Spacing */}
+        {/* FOOTER SPACING */}
         <View style={styles.footer} />
       </ScrollView>
     </SafeAreaView>
@@ -415,7 +405,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   scrollContent: {
-    paddingBottom: 30,
+    paddingBottom: 20,
   },
   loadingContainer: {
     flex: 1,
@@ -433,20 +423,16 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#0F172A',
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 30,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    paddingTop: 60,
+    paddingBottom: 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
-  headerContent: {
+  headerTop: {
     flexDirection: 'row',
-    marginTop: 30,
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-  },
-  headerTextContainer: {
-    flex: 1,
-    marginRight: 12,
+    marginBottom: 12,
   },
   greeting: {
     color: '#94A3B8',
@@ -455,28 +441,26 @@ const styles = StyleSheet.create({
   },
   doctorName: {
     color: 'white',
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
-    marginBottom: 8,
-    maxWidth: width - 150,
+    marginBottom: 4,
   },
   dateTime: {
     color: '#CBD5E1',
-    fontSize: 13,
+    fontSize: 14,
     marginBottom: 4,
   },
   currentTime: {
     color: '#94A3B8',
-    fontSize: 12,
+    fontSize: 13,
   },
   clinicStatusIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 6,
     borderRadius: 20,
-    minWidth: 80,
   },
   statusDot: {
     width: 8,
@@ -490,14 +474,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   
-  // SECTION HEADERS
+  // SECTIONS
+  section: {
+    paddingHorizontal: 20,
+    marginTop: 24,
+  },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginTop: 20,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 18,
@@ -506,14 +492,11 @@ const styles = StyleSheet.create({
   },
   viewAllText: {
     color: '#2563EB',
-    fontWeight: '600',
-    fontSize: 13,
+    fontWeight: '500',
+    fontSize: 14,
   },
   
-  // TODAY'S OVERVIEW STATS
-  statsSection: {
-    paddingHorizontal: 20,
-  },
+  // STATS GRID
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -521,51 +504,63 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: '31%',
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
+    padding: 16,
+    marginBottom: 10,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowRadius: 3,
     elevation: 2,
-    minHeight: 70,
+  },
+  statCardPrimary: {
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  statCardSuccess: {
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+  },
+  statCardError: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
   },
   statNumber: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '700',
     color: '#1E293B',
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#64748B',
-    textAlign: 'center',
-    width: '100%',
+    fontWeight: '500',
   },
   
   // QUICK ACTIONS
   actionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 20,
     justifyContent: 'space-between',
   },
-  actionBox: {
+  actionCard: {
     width: '48%',
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 14,
+    padding: 16,
     marginBottom: 12,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowRadius: 3,
     elevation: 2,
-    minHeight: 100,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
   actionIcon: {
     width: 48,
@@ -573,36 +568,34 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   actionText: {
     fontSize: 13,
     fontWeight: '600',
     color: '#1E293B',
     textAlign: 'center',
-    lineHeight: 16,
-    minHeight: 32,
   },
   
-  // TODAY'S SCHEDULE
+  // SCHEDULE CARD
   scheduleCard: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    marginHorizontal: 20,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowRadius: 3,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
   appointmentItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    minHeight: 60,
+    borderBottomColor: '#F8FAFC',
   },
   appointmentTimeContainer: {
     width: 70,
@@ -615,156 +608,161 @@ const styles = StyleSheet.create({
   appointmentDetails: {
     flex: 1,
     marginLeft: 12,
-    marginRight: 8,
+    marginRight: 12,
   },
   patientName: {
     fontSize: 15,
     fontWeight: '500',
     color: '#1E293B',
-    marginBottom: 4,
-  },
-  appointmentMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
+    marginBottom: 2,
   },
   serviceText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#64748B',
-    flexShrink: 1,
-  },
-  doctorText: {
-    fontSize: 12,
-    color: '#64748B',
-    marginLeft: 4,
-    flexShrink: 1,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-    minWidth: 70,
-    justifyContent: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+  statusDotSmall: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6,
   },
   statusBadgeText: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '600',
-    marginLeft: 4,
+    textTransform: 'capitalize',
   },
   
-  // INFO CARD
+  // INFO CARD - FIXED
   infoCard: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    marginHorizontal: 20,
-    marginTop: 16,
-    padding: 16,
+    padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowRadius: 3,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
   infoItem: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     flex: 1,
-    marginRight: 8,
+  },
+  infoIcon: {
+    marginTop: 2,
+  },
+  infoContent: {
+    marginLeft: 12,
+    flex: 1,
   },
   infoLabel: {
     color: '#64748B',
-    fontSize: 12,
-    marginLeft: 6,
-    marginRight: 4,
-    width: 40,
+    fontSize: 13,
+    fontWeight: '500',
+    marginBottom: 4,
   },
   infoValue: {
     color: '#1E293B',
-    fontSize: 12,
-    fontWeight: '500',
-    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
   },
-  capacityInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F0F9FF',
-    padding: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#BAE6FD',
-  },
-  capacityText: {
-    flex: 1,
-    marginLeft: 8,
-    fontSize: 13,
-    color: '#0C4A6E',
-    fontWeight: '500',
+  infoDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: '#E2E8F0',
+    marginHorizontal: 16,
   },
   
-  // LIVE UPDATES
+  // CAPACITY CONTAINER
+  capacityContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  capacityItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  capacityNumber: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: 4,
+  },
+  capacityLabel: {
+    fontSize: 12,
+    color: '#64748B',
+    textAlign: 'center',
+    paddingHorizontal: 4,
+  },
+  capacityDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: '#E2E8F0',
+  },
+  
+  // UPDATES CARD
   updatesCard: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    marginHorizontal: 20,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowRadius: 3,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
   updateItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: '#F8FAFC',
+  },
+  updateIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   updateContent: {
     flex: 1,
-    marginLeft: 10,
   },
   updateMessage: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#1E293B',
     marginBottom: 4,
-    lineHeight: 16,
+    lineHeight: 20,
   },
   updateTime: {
-    fontSize: 11,
-    color: '#64748B',
-  },
-  
-  // SYSTEM STATUS
-  systemStatus: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  systemStatusItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: 8,
-  },
-  systemStatusText: {
-    color: '#64748B',
-    fontSize: 11,
-    marginLeft: 6,
-    flex: 1,
+    fontSize: 12,
+    color: '#94A3B8',
   },
   
   // FOOTER
   footer: {
-    height: 30,
+    height: 20,
   },
 });
