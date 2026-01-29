@@ -7,6 +7,8 @@ import ClinicTabNavigator from './ClinicTabNavigator';
 import StudentBottomTabs from './StudentBottomTabs';
 import StudentAppointment from '../screens/student/studentAppointment';
 import StudentBooking from '../screens/student/studentBooking';
+import FAQScreen from '../screens/student/faq';
+import MyDocument from '../screens/student/myDocuments';
 
 const Stack = createNativeStackNavigator();
 
@@ -26,6 +28,8 @@ const AppNavigator = () => {
         <Stack.Screen name="StudentDashboard" component={StudentBottomTabs} />
         <Stack.Screen name="StudentAppointment" component={StudentAppointment} />
         <Stack.Screen name="StudentBooking" component={StudentBooking} />
+        <Stack.Screen name="FAQScreen" component={FAQScreen} />
+        <Stack.Screen name="MyDocument" component={MyDocument} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -52,10 +52,10 @@ export default function StudentDashboardScreen() {
       completionRate: '5',
     },
     recentActivity: [
-      { id: '1', date: 'Jan 30', action: 'Dental appointment booked', type: 'booking' },
-      { id: '3', date: 'Dec 5', action: 'CoR document uploaded', type: 'upload' },
-      { id: '2', date: 'Dec 6', action: 'Medical consultation completed', type: 'completed' },
-      { id: '4', date: 'Dec 1', action: 'Account verified', type: 'verification' },
+      { id: '1', date: 'Feb 8', action: 'Dental appointment booked', type: 'booking' },
+      { id: '2', date: 'Jan 20', action: 'Medical consultation completed', type: 'completed' },
+      { id: '3', date: 'Jan 15', action: 'Medical Consultation Complete', type: 'booking' },
+      { id: '4', date: 'Jan 11', action: 'Booking Cancelled', type: 'cancel' },
     ],
     availableSlots: {
       medical: 3,
@@ -247,7 +247,7 @@ export default function StudentDashboardScreen() {
             <View style={styles.statusItem}>
               <Ionicons name="time-outline" size={20} color="#6B7280" />
               <Text style={styles.statusItemText}>Updated: </Text>
-              <Text style={styles.statusItemValue}>Today</Text>
+              <Text style={styles.statusItemValue}>Dec 10</Text>
             </View>
           </View>
           
@@ -313,7 +313,7 @@ export default function StudentDashboardScreen() {
           
           <TouchableOpacity 
             style={styles.actionBox}
-            onPress={() => navigation.navigate('FAQ')}
+            onPress={() => navigation.navigate('FAQScreen')}
           >
             <View style={[styles.actionIcon, { backgroundColor: '#FEF3C7' }]}>
               <Ionicons name="help-circle-outline" size={28} color="#F59E0B" />
@@ -323,7 +323,7 @@ export default function StudentDashboardScreen() {
           
           <TouchableOpacity 
             style={styles.actionBox}
-            onPress={() => navigation.navigate('Documents')}
+            onPress={() => navigation.navigate('MyDocument')}
           >
             <View style={[styles.actionIcon, { backgroundColor: '#ECFDF5' }]}>
               <Ionicons name="document-text-outline" size={28} color="#10B981" />
