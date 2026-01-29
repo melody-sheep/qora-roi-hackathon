@@ -1,58 +1,841 @@
-# 📱 Qora - Detailed Interface & Components Design  
-*Designed for community use with clear, non-technical guidance for all users.*
+🏥 COMPLETE QORA INTERFACE SYSTEM (Both POVs)
+🔐 AUTHENTICATION FLOW (Hour 0-4)
+[1] WELCOME SCREEN
+text
+🏥 USTP MEDICAL CLINIC
+════════════════════════
 
----
+          Q O R A
+    Queue-Oriented Access
 
-## 🔐 **Authentication Interfaces**  
-*Designed to be simple, welcoming, and accessible for everyone.*
+"Healthcare access with clarity and dignity"
 
-| Screen | Components | Description for Users |
-|--------|------------|----------------------|
-| **Login** | 1. **Logo** – Qora icon and name<br>2. **Email Input** – “Enter your email address”<br>3. **Password Input** – “Enter your password”<br>4. **Login Button** – “Sign In”<br>5. **Forgot Password?** – Link<br>6. **Sign Up Link** – “Don’t have an account? Register here”<br>7. **Loading Indicator** – “Signing you in...” | *Welcome back! Just enter your email and password to access your appointments.* |
-| **Register** | 1. **Logo** – Qora icon and name<br>2. **Full Name Input** – “Enter your full name”<br>3. **Email Input** – “Enter your email”<br>4. **Password Input** – “Create a password”<br>5. **Confirm Password** – “Repeat your password”<br>6. **Register Button** – “Create Account”<br>7. **Login Link** – “Already have an account? Sign in here”<br>8. **Validation Messages** – “Passwords must match” | *Join Qora in a few steps. We’ll help you book appointments easily.* |
+─────────────────────────────
+🎓 I'M A STUDENT
+   Book appointments easily
+   ➡️ Upload CoR → See slots → Book
+─────────────────────────────
 
----
+👨‍⚕️ I'M CLINIC STAFF
+   Manage clinic operations
+   ➡️ Set availability → View queue → Update status
+─────────────────────────────
 
-## 🧑‍💼 **Citizen POV – Dashboard & Booking**  
-*Focused on clarity, guidance, and reassurance.*
+📱 [Already have an account? Sign In]
+[2] STUDENT REGISTRATION
+text
+📝 CREATE STUDENT ACCOUNT
+══════════════════════════
 
-| Screen | Components | Description for Users |
-|--------|------------|----------------------|
-| **Citizen Dashboard** | 1. **Welcome Header** – “Hello, [Name]”<br>2. **Service List Cards** – Tap to see details<br>3. **Active Appointment Card** – Shows next appointment<br>4. **Queue Badge** – Your current number<br>5. **Status Label** – “Waiting”, “In Progress”, “Done”<br>6. **Navigation Tabs** – Dashboard, Book, Status<br>7. **Refresh Button** – “Check for updates”<br>8. **Help Button** – “How to use?” | *This is your home screen. See your upcoming appointments and current queue status at a glance.* |
-| **Book Appointment** | 1. **Service Dropdown** – “Choose a service”<br>2. **Date Picker** – “Select a date”<br>3. **Time Slot Picker** – “Pick a time”<br>4. **Description Input** – “Tell us what you need (optional)”<br>5. **AI Help Button** – “Help me write this”<br>6. **Character Counter** – “X/200 characters”<br>7. **Submit Button** – “Book Appointment”<br>8. **Back Button** – “Cancel” | *Fill in the details for your appointment. Use the AI helper if you’re not sure how to describe your request.* |
-| **Appointment Status** | 1. **Queue Number Display** – Large bold number<br>2. **Status Timeline** – Visual progress bar<br>3. **Estimated Wait** – “About X minutes left”<br>4. **Cancel Button** – “Cancel Appointment”<br>5. **Progress Indicator** – Animated loading if active<br>6. **Timestamp** – “Booked on [date] at [time]”<br>7. **Notify Me Button** – “Alert me when it’s my turn”<br>8. **Help Text** – “Your turn will come soon. Please wait.” | *Track your place in line. You’ll see updates in real time.* |
+🔤 Full Name: _______________
+🎫 Student ID: _______________
+📧 USTP Email: _______________
+🔒 Password:  _______________
+🔒 Confirm Password: ________
 
----
+⚠️ PERMISSION NOTICE:
+📸 Camera access needed for CoR upload
+🔔 Notifications for appointment updates
 
-## 👨‍💼 **Admin POV – Management & Oversight**  
-*Designed for clarity, control, and efficiency.*
+☑️ I agree to terms & privacy policy
+☑️ I am a currently enrolled USTP student
 
-| Screen | Components | Description for Users |
-|--------|------------|----------------------|
-| **Admin Dashboard** | 1. **Today’s Summary Cards** – Total, Waiting, In Progress, Done<br>2. **Appointment List** – Scrollable list with name, service, status<br>3. **Filter Buttons** – All, Waiting, Today, Done<br>4. **Search Bar** – “Search by name or queue number”<br>5. **Refresh Button** – Sync latest data<br>6. **Logout Button** – Top right<br>7. **Daily Insights** – “Peak hour: 10 AM”<br>8. **Help Icon** – “Guide to managing queues” | *Overview of today’s appointments. Filter and search to focus on what matters.* |
-| **Appointment Manager** | 1. **Appointment Detail Card** – User info, service, notes<br>2. **Status Selector** – Dropdown: Waiting → In Progress → Done<br>3. **Confirm Button** – “Update Status”<br>4. **History Log** – Past status changes with timestamps<br>5. **Alert Messages** – “Status updated successfully”<br>6. **Call Next Button** – “Call Next in Line”<br>7. **Notes Field** – “Add internal notes”<br>8. **Back to Dashboard** – “← Return to list” | *Manage each appointment individually. Update status and add notes as needed.* |
+[⬅️ Back]         [Continue ➡️]
+[3] STUDENT LOGIN
+text
+🔐 STUDENT LOGIN
+═════════════════
 
----
+📧 Email: _______________
+🔒 Password: _______________
 
-## ℹ️ **Help & Guidance Components (Across All Screens)**
+🔗 Forgot Password?
+🔗 No account? Register now
 
-| Component | Where Used | User-Friendly Description |
-|-----------|------------|---------------------------|
-| **Info Popup** | All screens | *Tap the (?) icon for simple instructions.* |
-| **Loading Spinner** | During actions | *Please wait while we process your request.* |
-| **Success Toast** | After actions | *Great! Your appointment is booked.* |
-| **Error Message** | Input/API errors | *Oops! Something went wrong. Please try again.* |
-| **Empty State** | No data | *No appointments yet. Book your first one!* |
-| **Tooltip** | On hover/tap | *This button lets you refresh the list.* |
+[Sign In]  [Continue with Google]
 
----
+─────────────────────────────
+👤 Need clinic access? Contact admin
+[4] DOCTOR/STAFF LOGIN
+text
+👨‍⚕️ CLINIC STAFF PORTAL
+═══════════════════════
 
-## 📲 **Key Design Principles for Community Use**
+🏥 USTP Medical & Dental Clinic
+Authorized Personnel Only
 
-1. **Clear Labels** – No technical jargon.
-2. **Visual Feedback** – Buttons change color when pressed.
-3. **Step-by-Step Guidance** – Help text on every screen.
-4. **Accessibility** – Large touch targets, high contrast.
-5. **Reassurance** – Confirmations after every action.
+📧 Work Email: _______________
+🔒 Password: _______________
 
----
+🔐 REQUIRES ADMIN APPROVAL
+⚠️ First time? Request clinic access
+
+[Login to Clinic Dashboard]
+
+─────────────────────────────
+📞 Contact admin: clinic@ustp.edu.ph
+🎓 STUDENT POV INTERFACES
+[5] CoR UPLOAD (First Login - MODAL)
+text
+📄 VERIFY YOUR STUDENT STATUS
+══════════════════════════════
+
+Step 1 of 2: Upload Certificate of Registration
+
+📸 CAMERA ACCESS REQUEST:
+"Allow QORA to access your camera to scan CoR?"
+
+[Allow Camera]  [Choose from Gallery]
+
+┌─────────────────────────┐
+│                         │
+│   📷 Preview Area       │
+│   [No image selected]   │
+│                         │
+└─────────────────────────┘
+
+⚠️ Requirements:
+• Full CoR page visible
+• Clear photo, no glare
+• Valid for current semester
+
+[Cancel]  [Submit for Verification]
+[6] VERIFICATION STATUS
+text
+🔄 VERIFICATION IN PROGRESS
+═══════════════════════════
+
+⏳ Processing your CoR...
+Please wait 2-3 minutes
+
+✅ What happens next:
+1. System verifies enrollment
+2. Check student ID validity
+3. Grant booking access
+
+OR (if verified):
+✅ VERIFICATION SUCCESSFUL!
+🎉 Welcome, [Student Name]!
+📅 You can now book appointments
+
+OR (if failed):
+❌ VERIFICATION FAILED
+📸 Please upload clearer CoR image
+📞 Contact clinic if issue persists
+
+[Try Again]  [Contact Support]
+[7] STUDENT DASHBOARD (Verified)
+text
+👋 Welcome back, [First Name]!
+
+📊 YOUR STATS:
+🩺 Appointments this year: 2/5
+📅 Next appointment: Tomorrow, 2:00 PM
+🏥 Clinic status: 🟢 OPEN
+
+🚀 QUICK ACTIONS:
+[🏥 Book Medical]   [🦷 Book Dental]
+[⚡ Emergency Slot] [📋 My Appointments]
+
+🔔 NOTIFICATIONS (2):
+• Dr. Santos confirmed your appointment
+• New slots available this week
+
+📍 Clinic Hours: Mon-Fri, 9AM-5PM
+[8] SERVICE SELECTION
+text
+🎯 SELECT SERVICE TYPE
+══════════════════════
+
+🏥 MEDICAL CONSULTATION
+   └── General checkups, prescriptions
+   └── 30 minutes per slot
+   └── Dr. Santos, Dr. Reyes
+
+🦷 DENTAL CHECKUP
+   └── Cleaning, consultations
+   └── 45 minutes per slot
+   └── Dr. Cruz
+
+⚡ EMERGENCY SLOT
+   └── Priority, urgent cases only
+   └── 15 minutes
+   └── Limited availability
+
+[⬅️ Back]  [Next: Choose Date ➡️]
+[9] DATE SELECTION
+text
+📅 CHOOSE DATE
+══════════════
+
+March 2024
+S  M  T  W  T  F  S
+                1  2
+3  4  5  6  7  8  9
+10 11 12 13 14 15 16 🟢
+17 18 19 20 21 22 23 🟡
+24 25 26 27 28 29 30 🔴
+
+LEGEND:
+🟢 Many slots available
+🟡 Few slots left
+🔴 Fully booked
+
+Selected: March 15, 2024 (Friday)
+
+[⬅️ Back]  [See Time Slots ➡️]
+[10] TIME SLOT SELECTION (REAL-TIME)
+text
+⏰ AVAILABLE SLOTS - March 15
+═════════════════════════════
+
+🕘 MORNING:
+• 9:00 AM  🟢 (3 slots left) [Select]
+• 9:30 AM  🔴 FULL
+• 10:00 AM 🟡 (1 slot left!) [Select]
+• 10:30 AM 🟢 (2 slots left) [Select]
+• 11:00 AM 🔴 FULL
+
+🕑 AFTERNOON:
+• 2:00 PM  🟢 (3 slots left) [Select]
+• 2:30 PM  🔴 FULL
+• 3:00 PM  🟡 (Last slot!) [Select]
+• 3:30 PM  🟢 (2 slots left) [Select]
+
+⚠️ Real-time: Slot just booked at 2:00 PM!
+[11] BOOKING CONFIRMATION (MODAL)
+text
+✅ CONFIRM APPOINTMENT
+══════════════════════
+
+📋 APPOINTMENT DETAILS:
+Service: 🦷 Dental Checkup
+Date: March 15, 2024 (Friday)
+Time: 2:00 PM - 2:45 PM
+Doctor: Dr. Cruz
+Location: USTP Medical Clinic, Room 201
+
+📝 Notes (optional):
+[Any symptoms or concerns?]
+
+⚠️ IMPORTANT:
+• Bring your student ID
+• Arrive 10 minutes early
+• Max 5 free services/year
+
+☑️ I understand cancellation policy
+☑️ I confirm I'm not feeling COVID symptoms
+
+[Cancel]  [Book Appointment]
+[12] BOOKING SUCCESS
+text
+🎉 APPOINTMENT CONFIRMED!
+══════════════════════════
+
+✅ Booking ID: #QORA-2024-0156
+✅ Service: Dental Checkup
+✅ Date: March 15, 2:00 PM
+✅ Doctor: Dr. Cruz
+
+📲 ACTIONS:
+[📅 Add to Calendar] ← PERMISSION REQUEST
+[📋 View Appointment Details]
+[📤 Share Details]
+[🏠 Return to Dashboard]
+
+🔔 NOTIFICATION SENT:
+Reminder set for 1 hour before appointment
+[13] MY APPOINTMENTS
+text
+📋 MY APPOINTMENTS
+══════════════════
+
+🔘 UPCOMING (2)   🔘 PAST (5)
+
+┌─────────────────────────┐
+│ 🟢 CONFIRMED            │
+│ 🦷 Dental Checkup       │
+│ 📅 Mar 15, 2:00 PM      │
+│ 👨‍⚕️ Dr. Cruz           │
+│ [Cancel] [Reschedule]   │
+└─────────────────────────┘
+
+┌─────────────────────────┐
+│ 🟡 PENDING              │
+│ 🏥 Medical Consultation │
+│ 📅 Mar 20, 10:30 AM     │
+│ 👩‍⚕️ Dr. Santos         │
+│ [Cancel]               │
+└─────────────────────────┘
+
+📊 Yearly usage: 2/5 appointments
+[14] APPOINTMENT DETAILS
+text
+📄 APPOINTMENT #QORA-2024-0156
+══════════════════════════════
+
+STATUS: 🟢 CONFIRMED
+👤 Patient: [Your Name], SID-2023-001
+🏥 Service: Dental Checkup (45 mins)
+👨‍⚕️ Doctor: Dr. Maria Cruz
+📅 Date: March 15, 2024
+⏰ Time: 2:00 PM - 2:45 PM
+📍 Location: USTP Clinic, Building 2, Room 201
+
+🗺️ [View Clinic Map]
+
+📝 Your notes: "Routine checkup"
+
+🚨 ACTIONS:
+[❌ Cancel Appointment] ← CONFIRMATION DIALOG
+[↻ Reschedule]
+[📞 Contact Clinic]
+[📋 Back to List]
+[15] STUDENT PROFILE & SETTINGS
+text
+👤 MY PROFILE
+══════════════
+
+📸 Profile Picture [Change]
+👤 [Student Name]
+🎫 [Student ID]
+📧 [Email]
+📞 [Phone - Add]
+
+⚙️ SETTINGS:
+🔔 NOTIFICATIONS
+   ☑️ Push notifications
+   ☑️ Email reminders
+   ☐ Promotional updates
+
+🔒 PRIVACY
+   ☑️ Auto-delete records after 1 year
+   ☐ Share anonymous usage data
+
+📱 PERMISSIONS:
+   ✅ Camera: Granted
+   ✅ Notifications: Granted
+   ❌ Calendar: Not granted [Grant]
+
+🚪 [Logout] ← "Are you sure?" CONFIRMATION
+👨‍⚕️ DOCTOR/CLINIC POV INTERFACES
+[16] DOCTOR ONBOARDING
+text
+👨‍⚕️ COMPLETE CLINIC PROFILE
+═══════════════════════════
+
+🏥 USTP MEDICAL CLINIC
+Authorized Personnel Setup
+
+📸 Profile Photo [Upload]
+👤 Full Name: _______________
+🆔 License Number: ___________
+🎯 Specialization: [Dentistry ▼]
+📞 Clinic Extension: _________
+
+✍️ Digital Signature [Upload]
+   For prescriptions and notes
+
+⚠️ DATA ACCESS NOTICE:
+You will access student medical data
+All access is logged and monitored
+
+[Save & Continue to Dashboard]
+[17] CLINIC DASHBOARD
+text
+🏥 CLINIC DASHBOARD
+═══════════════════
+
+👋 Good morning, Dr. [Last Name]
+📅 Friday, March 15, 2024
+⏰ Current time: 9:15 AM
+
+📊 TODAY'S OVERVIEW:
+• 📅 Total appointments: 12
+• ✅ Completed: 2
+• 🔄 In progress: 1
+• ⏳ Waiting: 3
+• 🆓 Available slots: 6
+
+🚀 QUICK ACTIONS:
+[👥 View Today's Queue] [📅 Set Availability]
+[⚡ Add Emergency Slot] [🔍 Patient Lookup]
+[📢 Send Announcement]
+
+🔔 LIVE UPDATES:
+• 2 mins ago: Harry Inidal booked 2PM slot
+• 5 mins ago: Appointment cancelled (10:30AM)
+[18] SET AVAILABILITY
+text
+📅 MANAGE WEEKLY SCHEDULE
+══════════════════════════
+
+Week of March 18-22, 2024
+
+[Copy from last week] [Use template]
+
+MONDAY: 🟢 ACTIVE
+   └── 9:00 AM - 12:00 PM
+   └── 1:00 PM - 5:00 PM
+   └── Max patients/hour: 4
+
+TUESDAY: 🟢 ACTIVE
+   └── Same as Monday
+
+WEDNESDAY: 🔴 INACTIVE
+   └── [Activate] [Set custom]
+
+THURSDAY: 🟢 ACTIVE
+   └── [Edit hours]
+
+FRIDAY: 🟢 ACTIVE
+   └── [Edit hours]
+
+⚠️ Changes affect future slots only
+Current appointments remain
+
+[Save & Generate Slots]
+[19] SERVICE CONFIGURATION
+text
+⚙️ SERVICE SETTINGS
+═══════════════════
+
+🏥 MEDICAL CONSULTATION
+   Duration: 30 minutes
+   Patients per slot: 1
+   Preparation time: 5 mins
+   ☑️ Available to students
+
+🦷 DENTAL CHECKUP
+   Duration: 45 minutes
+   Patients per slot: 1
+   Preparation time: 10 mins
+   ☑️ Available to students
+
+⚡ EMERGENCY SLOT
+   Duration: 15 minutes
+   Patients per slot: 1
+   Priority: HIGH
+   ☑️ Available to students
+
+➕ [Add New Service]
+
+⚠️ Changing duration affects future slots only
+[20] TODAY'S QUEUE
+text
+👥 TODAY'S QUEUE - March 15
+═══════════════════════════
+
+⏰ CURRENT TIME: 9:20 AM
+
+🟢 IN PROGRESS (1):
+┌─────────────────────────┐
+│ 👤 Maria Santos         │
+│ 🆔 SID-2022-045         │
+│ 🏥 Medical Consultation │
+│ ⏰ Started: 9:15 AM     │
+│ [Complete] [Add Notes]  │
+└─────────────────────────┘
+
+🟡 WAITING (3):
+1. 👤 Juan Dela Cruz (9:30 AM)
+2. 👤 Ana Reyes (9:30 AM) 
+3. 👤 Harry Inidal (2:00 PM)
+
+✅ COMPLETED (2):
+• Pedro Gomez (8:30 AM)
+• Sofia Lim (9:00 AM)
+
+[Refresh] [Add Walk-in Patient]
+[21] PATIENT DETAILS (Doctor View)
+text
+📋 PATIENT RECORD
+══════════════════
+
+👤 Harry Inidal
+🆔 SID-2023-001
+📧 harry.inidal@ustp.edu.ph
+📞 +63 912 345 6789
+🎓 BS Computer Science, 1st Year
+
+📅 APPOINTMENT HISTORY (2):
+1. Mar 1, 2024: Medical - Dr. Santos ✅
+2. Today, 2:00 PM: Dental - Dr. Cruz 🟡
+
+📝 CURRENT APPOINTMENT:
+Service: 🦷 Dental Checkup
+Time: 2:00 PM - 2:45 PM
+Status: 🟡 CONFIRMED
+Notes: "Routine checkup"
+
+📋 DOCTOR'S NOTES:
+[Enter consultation notes here...]
+
+🏷️ TAGS: [First-time patient] [Follow-up needed]
+
+[Save Notes] [Start Consultation] [Prescribe]
+[22] APPOINTMENT MANAGEMENT
+text
+📅 MANAGE APPOINTMENT
+══════════════════════
+
+Appointment: #QORA-2024-0156
+Patient: Harry Inidal
+Time: 2:00 PM Today
+
+🔄 CHANGE STATUS:
+○ 🟢 CONFIRMED
+○ 🟡 CHECKED IN
+○ 🔵 IN PROGRESS
+○ ✅ COMPLETED
+○ ❌ CANCELLED
+○ 🚫 NO-SHOW
+
+📝 ADD NOTES:
+[Patient arrived early, no symptoms]
+
+⚠️ ACTIONS REQUIRING CONFIRMATION:
+[❌ Cancel Appointment] ← WHY? DROPDOWN
+[↻ Reschedule Patient]
+[📞 Contact Patient]
+
+🔔 SEND NOTIFICATION:
+[ ] Patient
+[ ] All waiting patients
+[ ] Clinic staff
+
+[Save Changes]
+[23] EMERGENCY SLOT ADD (MODAL)
+text
+⚡ ADD EMERGENCY SLOT
+══════════════════════
+
+⚠️ URGENT ACTION
+This will create priority slots
+
+📅 Date: Today (March 15)
+⏰ Time: [2:00 PM ▼]
+⏱️ Duration: [30 minutes ▼]
+👥 Max patients: [2 ▼]
+🏥 Service: [Medical Consultation ▼]
+
+🔔 NOTIFICATION:
+"Emergency slots added for today"
+
+🎯 PRIORITY SETTINGS:
+☑️ Show to all verified students
+☑️ Send push notification
+☐ Require symptom description
+
+[Cancel]  [Add Emergency Slot]
+[24] BROADCAST MESSAGE
+text
+📢 SEND CLINIC ANNOUNCEMENT
+═══════════════════════════
+
+👥 RECIPIENTS:
+☑️ All booked patients today (8)
+☑️ All waiting patients (3)
+☐ All verified students (1200)
+
+📝 MESSAGE TYPE:
+○ ⏰ Delay notice
+○ 🏥 Service update
+○ 📅 Schedule change
+○ 🩺 Health reminder
+○ 💬 General announcement
+
+✍️ MESSAGE:
+[Dr. Santos is running 15 minutes behind schedule. We apologize for the inconvenience.]
+
+⚠️ CONFIRMATION:
+"Send to 11 patients?"
+
+[Cancel]  [Send Announcement]
+[25] CLINIC SETTINGS
+text
+⚙️ CLINIC SETTINGS
+══════════════════
+
+👨‍⚕️ PROFILE:
+[Edit Profile] [Change Password]
+
+🏥 CLINIC HOURS:
+[Edit Default Hours]
+
+🔔 NOTIFICATIONS:
+☑️ New appointments
+☑️ Cancellations
+☑️ Emergency slots
+☐ Patient reminders
+
+📊 DATA & PRIVACY:
+[View Access Logs]
+[Export Today's Data]
+[Set Auto-approval for CoR]
+
+🚨 EMERGENCY MODE:
+[Activate Emergency Protocol]
+• Limit to urgent cases only
+• Notify all staff
+• Override regular schedule
+
+🚪 [Logout All Devices]
+⚠️ CRITICAL MODALS & PERMISSION DIALOGS
+[A] CAMERA PERMISSION
+text
+📸 CAMERA ACCESS REQUIRED
+══════════════════════════
+
+QORA needs camera access to:
+
+✅ Scan your Certificate of Registration
+✅ Take clear document photos
+✅ Verify student identity securely
+
+🔒 Your privacy:
+• Photos are stored securely
+• Only used for verification
+• Auto-deleted after 30 days
+
+[Not Now]  [Allow Camera Access]
+
+☐ Don't ask again
+[B] NOTIFICATION PERMISSION
+text
+🔔 ENABLE NOTIFICATIONS
+═══════════════════════
+
+Stay updated about:
+
+✅ Appointment confirmations
+✅ Clinic announcements  
+✅ Reminders 1 hour before
+✅ Emergency slot alerts
+✅ Status changes
+
+[Skip for Now]  [Enable Notifications]
+
+"Without notifications, you might miss important updates"
+[C] CALENDAR PERMISSION
+text
+📅 CALENDAR ACCESS
+══════════════════
+
+Add appointments to your calendar:
+
+✅ Automatic event creation
+✅ Reminders before appointments
+✅ Sync across devices
+✅ Easy cancellation tracking
+
+[Maybe Later]  [Allow Calendar Access]
+
+"Manual calendar entry will be available"
+[D] CANCEL APPOINTMENT CONFIRMATION
+text
+❌ CANCEL APPOINTMENT?
+══════════════════════
+
+⚠️ You're about to cancel:
+
+Service: Dental Checkup
+Date: March 15, 2:00 PM
+Doctor: Dr. Cruz
+
+📝 REASON (optional):
+[Select reason...]
+   ├── Schedule conflict
+   ├── Feeling better
+   ├── Found alternative
+   ├── Other
+
+⚠️ CONSEQUENCES:
+• Slot released to other students
+• Counts toward your 5 yearly services
+• May affect priority for future slots
+
+[Go Back]  [Yes, Cancel Appointment]
+[E] LOGOUT CONFIRMATION
+text
+🚪 LOG OUT?
+════════════
+
+Are you sure you want to log out?
+
+✅ You'll need to sign in again
+✅ Notifications will continue
+✅ Appointments remain booked
+
+🔒 SECURITY NOTE:
+Logging out protects your account on shared devices
+
+[Stay Logged In]  [Log Out]
+[F] EMERGENCY OVERRIDE
+text
+🚨 EMERGENCY OVERRIDE
+═════════════════════
+
+You're about to override clinic limits:
+
+⚠️ ACTION: Add emergency slots
+⚠️ AFFECTS: All future appointments today
+⚠️ NOTIFIES: All registered students
+
+🔐 REQUIRES CONFIRMATION:
+This action is logged and monitored
+
+REASON:
+[Briefly describe emergency...]
+
+[Cancel]  [Confirm Override]
+🔔 TOAST NOTIFICATIONS (Real-time)
+STUDENT TOASTS:
+text
+✅ APPOINTMENT BOOKED!
+"Dental checkup confirmed for 2:00 PM"
+
+🔄 STATUS UPDATED
+"Dr. Santos started your consultation"
+
+⚠️ REMINDER
+"Appointment in 1 hour - USTP Clinic"
+
+⚡ EMERGENCY SLOT
+"New emergency slots available now!"
+
+❌ CANCELLED
+"Your 10:30 AM appointment was cancelled"
+DOCTOR TOASTS:
+text
+👤 NEW BOOKING
+"Harry Inidal booked 2:00 PM dental"
+
+🔄 PATIENT CHECKED IN
+"Maria Santos checked in for 9:30 AM"
+
+⚠️ NO-SHOW
+"Juan Dela Cruz missed 10:00 AM slot"
+
+⚡ EMERGENCY ADDED
+"2 emergency slots active"
+
+📢 ANNOUNCEMENT SENT
+"Message delivered to 8 patients"
+📊 SYSTEM STATUS INDICATORS
+APPOINTMENT STATUS:
+text
+🟢 CONFIRMED - Booked and active
+🟡 PENDING - Awaiting confirmation  
+🔵 CHECKED IN - Patient arrived
+🟣 IN PROGRESS - Consultation ongoing
+✅ COMPLETED - Service finished
+❌ CANCELLED - Appointment cancelled
+🚫 NO-SHOW - Patient didn't arrive
+SLOT AVAILABILITY:
+text
+🟢 (3+) - Many slots available
+🟡 (1-2) - Few slots left
+🔴 (0) - Fully booked
+⚡ (Emergency) - Priority slot
+CLINIC STATUS:
+text
+🏥 🟢 OPEN - Regular hours
+🏥 🟡 LIMITED - Reduced capacity  
+🏥 🔴 CLOSED - No appointments
+🏥 ⚡ EMERGENCY - Priority only
+📱 NAVIGATION STRUCTURE
+STUDENT BOTTOM TABS:
+text
+[🏠 Home] [📅 Book] [📋 Appointments] [❓ FAQ] [👤 Profile]
+DOCTOR BOTTOM TABS:
+text
+[🏥 Dashboard] [👥 Queue] [📅 Schedule] [📢 Announce] [⚙️ Settings]
+🎯 DEMO SCENARIO FLOW (3 Minutes)
+Minute 1: Clinic Setup
+text
+Dr. Santos logs in → Sets availability for next week → 
+System generates 32 slots → Shows real-time dashboard
+Minute 2: Student Booking
+text
+Harry logs in (first time) → Uploads CoR → Gets verified → 
+Sees 32 available slots → Books 2PM dental → Gets confirmation
+Minute 3: Real-time Interaction
+text
+Dr. Santos sees Harry appear in queue → Marks as "In Progress" → 
+Harry gets notification → Consultation complete → System updates
+✅ COMPLETENESS CHECKLIST
+STUDENT POV:
+✅ Welcome & role selection
+
+✅ Registration & login
+
+✅ CoR upload & verification
+
+✅ Service/date/time selection
+
+✅ Booking & confirmation
+
+✅ Appointment management
+
+✅ Profile & settings
+
+✅ All permission dialogs
+
+✅ Real-time notifications
+
+DOCTOR POV:
+✅ Secure clinic login
+
+✅ Profile onboarding
+
+✅ Availability management
+
+✅ Service configuration
+
+✅ Live queue view
+
+✅ Patient management
+
+✅ Appointment status updates
+
+✅ Emergency overrides
+
+✅ Broadcast announcements
+
+✅ Clinic settings
+
+SHARED:
+✅ Authentication system
+
+✅ Permission management
+
+✅ Real-time updates
+
+✅ Toast notifications
+
+✅ Confirmation dialogs
+
+✅ Error handling
+
+✅ Loading states
+
+This is the complete system. Every interface, modal, permission dialog, and interaction needed for both Student and Clinic POVs. Build in this order:
+
+Authentication screens (1-4)
+
+Student verification flow (5-6)
+
+Clinic setup (16-19)
+
+Student booking (7-12)
+
+Clinic queue (20-22)
+
+Management & settings (13-15, 23-25)
+
+Modals & permissions (A-F)
+
+Polish & real-time
+
+You have everything you need. Now build! 🚀
