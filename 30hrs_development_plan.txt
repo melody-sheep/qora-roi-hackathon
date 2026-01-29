@@ -1,0 +1,303 @@
+QORA — Queue-Oriented Access
+
+Development Plan, Purpose, and Emotional Narrative
+(USTP Medical & Dental Clinic Hackathon — <30 Hours)
+
+0. System Framing — Purpose & Philosophy
+
+QORA stands for Queue-Oriented Access.
+
+“Healthcare is not just about treatments, it’s about access, clarity, and dignity.”
+
+Why QORA Exists
+
+Many USTP students rely on free medical and dental services. Yet even with these benefits, accessing care can be stressful, confusing, and uncertain.
+
+Manual scheduling wastes clinic staff time
+
+Students feel anxious about slot availability
+
+Free services risk being underutilized or unfairly distributed
+
+QORA’s mission:
+
+Automate clinic scheduling
+
+Show real-time availability
+
+Reduce stress and uncertainty
+
+Protect privacy and dignity
+
+Be AI-ready for future improvements
+
+QORA is not just a system, it’s a bridge between people and care.
+
+1. Sample Scenarios — Pitch Emotion
+🎓 Student Scenario — Harry Inidal
+
+Harry is a first-year student. He has no extra money for private clinics.
+He remembers that the university provides free medical and dental services, but he hesitates.
+
+He worries: “Will I get a slot? Will I have to wait for hours? What if the service is already taken?”
+
+Anxiety builds, and he almost decides to skip care entirely.
+
+Then, he opens QORA:
+
+Uploads his Certificate of Registration → instantly verified
+
+Sees the available slots for today’s services
+
+Finds a slot that fits his schedule
+
+Books it confidently, receiving a notification
+
+Harry smiles, relieved — access is no longer uncertain, and he feels cared for before even stepping into the clinic.
+
+🏥 Doctor / Clinic Scenario — Dr. Santos
+
+Dr. Santos arrives at the clinic. She can see her available hours today.
+
+Normally, she would spend hours creating manual schedules
+
+Today, she opens QORA and simply sets her service type and capacity
+
+The system automatically:
+
+Generates slots
+
+Publishes them to students
+
+Tracks bookings in real-time
+
+Updates if cancellations happen
+
+Dr. Santos can focus on actual care, not administrative work.
+
+QORA transforms the human experience for both students and staff.
+
+2. Core Unique Selling Points (USPs)
+A. Automation of Availability & Slots (Process Innovation)
+
+Solves the inefficiency of manual schedule creation
+
+Auto-generates slots based on doctor availability, service type, and capacity
+
+Updates real-time availability for students
+
+Allows emergency rescheduling
+✅ Judges see operational efficiency as practical innovation
+
+B. Human-Centered Design (Experience Innovation)
+
+Shows exact slots, prevents overbooking
+
+Enforces yearly service limits
+
+Reduces frustration, uncertainty, and inequality
+✅ Subjective innovation — emotional and human impact
+
+C. Verification Flow (Access Control Innovation)
+
+Students upload CoR → verified → access granted
+
+Ensures fairness for limited free services
+
+Maintains privacy and dignity
+✅ Judges often overlook social design, but this is critical
+
+D. Queue-Oriented Logic (Resource Management Innovation)
+
+Slot decrement prevents overbooking
+
+Prevents accidental scheduling conflicts
+
+Can scale across multiple doctors and services
+✅ Smart workflow innovation, low-tech but highly efficient
+
+E. Static FAQ Page (Self-Service Innovation)
+
+Reduces repetitive inquiries
+
+Answers common student questions proactively
+
+Adds value without increasing staff workload
+✅ Judges recognize thoughtful user support as innovation
+
+3. Framing “Innovation” in the Pitch
+
+“QORA is innovative not because it uses AI, but because it rethinks how students and clinic staff interact. By automating schedules, reducing uncertainty, and providing clear access, we create an experience that is faster, fairer, and more humane.”
+
+Optional addition:
+
+“It’s a small, simple system — but it solves a real, human problem, where others only provide technology.”
+
+If Panelists Ask: “Where is your innovation feature?”
+
+Process Innovation: Automated availability, slot logic, queue control
+
+Experience Innovation: Clarity, reduced stress, fairness for students
+
+Scalable Design: Integrates with Clinic EZ, AI-ready for future
+
+Judges see innovation as practical, scalable, and human-focused, not just flashy tech.
+
+💡 Key Insight: Innovation = solving ignored real problems, not adding AI unnecessarily.
+
+4. Technology Stack
+
+Frontend: React Native + Expo
+
+Backend: REST API
+
+Database/Auth/Storage: Supabase (RLS, Auth, private file storage)
+
+Version Control: GitHub
+
+UI/UX: AI-assisted code (no Figma)
+
+Security Principle:
+
+Supabase Auth + Row Level Security + HTTPS + minimal data storage
+
+5. Development Strategy
+
+Rule:
+
+Design → Static UI → Validate UX → Integrate Backend → Secure → Move to next interface
+
+Each interface is completed end-to-end before moving on
+
+Focus is not feature-heavy, but human-impact heavy
+
+6. Timeline & Tasks (<30 Hours)
+Phase 1 — Setup & Alignment (0–2h)
+
+Confirm scope, purpose, and scenarios
+
+Assign roles: Backend, Student UI, Doctor UI, Integration/Testing
+
+Initialize GitHub, Expo, Supabase
+
+Phase 2 — Database & Security (2–5h)
+
+Tables: users, documents (CoR), services, availability, appointments
+
+Supabase Auth + RLS
+
+Private file storage for CoR
+
+Phase 3 — Authentication (5–7h)
+
+Static login/signup UI
+
+Supabase integration
+
+Role-based routing
+✅ First interface complete
+
+Phase 4 — Student Flow (7–13h)
+
+Static UI: upload CoR, view availability, book appointment
+
+Validate UX for clarity and emotional impact
+
+Backend integration: file upload, fetch availability, create appointment
+
+Phase 5 — Doctor Flow (13–18h)
+
+Static UI: set availability, select service, define max patients, cancel/reschedule
+
+Backend integration: auto-slot generation, real-time updates
+
+Phase 6 — Queue Logic (18–22h)
+
+Slot decrement on booking
+
+Overbooking prevention
+
+Yearly service limit enforcement
+
+Optional: mock notifications
+
+Phase 7 — FAQ Page (22–23h)
+
+Static FAQ page with common questions
+
+Accessible from student dashboard
+
+Optional: dynamic Supabase-backed FAQ if time allows
+
+Phase 8 — Security Review (23–24h)
+
+Role enforcement validation
+
+Data minimization check
+
+File privacy & access control
+
+Phase 9 — Demo Prep & Pitch Rehearsal (24–28h)
+
+Seed demo data (Harry scenario)
+
+Student & doctor flows polished
+
+Innovation framing, Q&A answers
+
+Phase 10 — Buffer & Final Polish (28–30h)
+
+Bug fixes, final adjustments
+
+Backup demo
+
+Presenter rehearsal
+
+7. Pitch Anchor Sentence
+
+“QORA is not just an app. It’s a bridge for those in need, turning uncertainty into clarity, and making access to care fair, humane, and effortless.”
+
+This version:
+
+Adds emotional, story-driven scenarios
+
+Highlights innovation without AI
+
+Includes Static FAQ
+
+Explains human-centered design
+
+Gives clear phases and timings for <30h
+
+
+Students:
+
+Upload CoR (verify identity)
+
+Book/cancel appointments
+
+View available slots
+
+Receive notifications
+
+Doctors:
+
+Set/manage availability slots
+
+View/manage patient queue
+
+Update appointment statuses
+
+Send broadcast notifications
+
+Shared:
+
+Login/logout
+
+View appointment details
+
+Update profiles
+
+Manage notification settings
+
+Key difference: Students consume slots, doctors create and manage slots.

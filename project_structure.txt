@@ -1,0 +1,26 @@
+QORA/
+├── .expo/
+├── assets/
+├── node_modules/
+├── src/
+│   ├── api/
+│   │   └── supabase.js
+│   ├── components/
+│   │   ├── AuthCard.js
+│   │   ├── AuthInput.js
+│   │   ├── AuthButton.js
+│   │   ├── ParticlesBackground.js
+│   ├── screens/
+│   │   ├── LoginScreen.js
+│   │   └── RegisterScreen.js
+│   └── styles/
+│       └── authStyles.js
+├── App.js
+├── app.json
+├── index.js
+├── package.json
+├── package-lock.json
+├── .gitignore
+├── detailed_interface_and_components.txt
+├── development_plan.txt
+└── project_structure.txt
