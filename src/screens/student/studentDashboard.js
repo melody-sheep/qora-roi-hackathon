@@ -122,7 +122,7 @@ export default function StudentDashboardScreen() {
   };
 
   const handleViewAppointments = () => {
-    navigation.navigate('MyAppointmentsScreen');
+    navigation.navigate('StudentAppointment');
   };
 
   const handleUploadDocuments = () => {

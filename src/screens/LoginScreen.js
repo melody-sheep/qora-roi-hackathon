@@ -38,7 +38,15 @@ export default function LoginScreen() {
       Alert.alert(
         'Success',
         'Logged in successfully!',
-        [{ text: 'OK' }]
+        [
+          { 
+            text: 'OK',
+            onPress: () => {
+              // Navigate to Clinic Tab Navigator
+              navigation.navigate('ClinicMain');
+            }
+          }
+        ]
       );
     }, 1500);
   };
