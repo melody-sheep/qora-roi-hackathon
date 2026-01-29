@@ -1,287 +1,181 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
-  SafeAreaView,
+  TextInput,
+  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Alert,
   Image,
-  Animated,
-  TouchableOpacity,
   StatusBar,
+  TouchableWithoutFeedback,
+  Keyboard,
+  StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import * as Animatable from 'react-native-animatable';
 import { Ionicons } from '@expo/vector-icons';
-import ParticlesBackground from '../components/ParticlesBackground';
-import AuthCard from '../components/AuthCard';
-import AuthInput from '../components/AuthInput';
-import AuthButton from '../components/AuthButton';
 
 export default function LoginScreen() {
   const navigation = useNavigation();
-  const [step, setStep] = useState(1); // 1: Email, 2: Password, 3: Processing
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  // Fade animation for logo
-  React.useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 1000,
-      useNativeDriver: true,
-    }).start();
-  }, []);
-
-  const validateEmail = () => {
-    const newErrors = {};
-    
-    if (!email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Please enter a valid email';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const validatePassword = () => {
-    const newErrors = {};
-    
-    if (!password.trim()) {
-      newErrors.password = 'Password is required';
-    } else if (password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleNext = () => {
-    if (step === 1) {
-      if (validateEmail()) {
-        setStep(2);
-        setErrors({});
-      }
-    } else if (step === 2) {
-      if (validatePassword()) {
-        handleLogin();
-      }
-    }
-  };
-
-  const handleBack = () => {
-    if (step === 2) {
-      setStep(1);
-      setErrors({});
-    }
-  };
+  const [secureText, setSecureText] = useState(true);
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
     setLoading(true);
-    setStep(3);
     
-    // Simulate API call
     setTimeout(() => {
       setLoading(false);
       Alert.alert(
         'Success',
         'Logged in successfully!',
-        [{ text: 'OK', onPress: () => console.log('Login demo') }]
+        [{ text: 'OK' }]
       );
-      console.log('Login attempt:', { email, password });
-      setStep(2); // Reset to password step
-    }, 2000);
-  };
-
-  const handleForgotPassword = () => {
-    Alert.alert(
-      'Forgot Password',
-      'A password reset link will be sent to your email.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Send', onPress: () => console.log('Send reset link') },
-      ]
-    );
-  };
-
-  const renderStepContent = () => {
-    switch (step) {
-      case 1: // Email Step
-        return (
-          <Animatable.View animation="fadeIn" duration={500}>
-            <Text style={styles.stepTitle}>Enter your email</Text>
-            <Text style={styles.stepSubtitle}>We'll use this to sign you in</Text>
-            
-            <AuthInput
-              label="Email Address"
-              placeholder="Enter your email address"
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                if (errors.email) setErrors({ ...errors, email: '' });
-              }}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              error={errors.email}
-              icon="mail-outline"
-              autoFocus={true}
-            />
-
-            <View style={styles.buttonContainer}>
-              <AuthButton
-                title="Next"
-                onPress={handleNext}
-                disabled={!email.trim()}
-                icon="arrow-forward-outline"
-                iconPosition="right"
-              />
-            </View>
-          </Animatable.View>
-        );
-
-      case 2: // Password Step
-        return (
-          <Animatable.View animation="fadeIn" duration={500}>
-            <View style={styles.headerRow}>
-              <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                <Ionicons name="arrow-back-outline" size={24} color="#2563EB" />
-              </TouchableOpacity>
-              <View style={styles.headerText}>
-                <Text style={styles.stepTitle}>Welcome back</Text>
-                <Text style={styles.emailText}>{email}</Text>
-              </View>
-            </View>
-            
-            <Text style={styles.stepSubtitle}>Enter your password to continue</Text>
-            
-            <AuthInput
-              label="Password"
-              placeholder="Enter your password"
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                if (errors.password) setErrors({ ...errors, password: '' });
-              }}
-              secureTextEntry
-              error={errors.password}
-              icon="lock-closed-outline"
-              autoFocus={true}
-            />
-
-            <View style={styles.forgotPasswordContainer}>
-              <AuthButton
-                title="Forgot Password?"
-                onPress={handleForgotPassword}
-                variant="link"
-                icon="help-circle-outline"
-                iconPosition="right"
-              />
-            </View>
-
-            <View style={styles.buttonContainer}>
-              <AuthButton
-                title={loading ? "Signing in..." : "Sign In"}
-                onPress={handleNext}
-                disabled={!password.trim() || loading}
-                loading={loading}
-                icon="log-in-outline"
-                iconPosition="right"
-              />
-            </View>
-          </Animatable.View>
-        );
-
-      case 3: // Processing Step
-        return (
-          <Animatable.View animation="fadeIn" duration={500} style={styles.processingContainer}>
-            <Ionicons name="lock-closed-outline" size={60} color="#2563EB" />
-            <Text style={styles.processingTitle}>Signing you in...</Text>
-            <Text style={styles.processingText}>Please wait while we verify your credentials</Text>
-          </Animatable.View>
-        );
-
-      default:
-        return null;
-    }
+    }, 1500);
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
-      <ParticlesBackground />
-      
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          bounces={false}
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
+        
+        {/* Background */}
+        <View style={styles.background} />
+        
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
         >
-          <View style={styles.content}>
-            {/* Logo Section with Fade Animation */}
-            <Animated.View style={[styles.logoContainer, { opacity: fadeAnim }]}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.logoContainer}>
               <Image
                 source={require('../../assets/qora_logo.png')}
                 style={styles.logo}
                 resizeMode="contain"
               />
-              <Animatable.Text 
-                animation="fadeIn" 
-                delay={1200} 
-                duration={1000}
-                style={styles.tagline}
-              >
+              <Text style={styles.tagline}>
                 Healthcare access with clarity and dignity
-              </Animatable.Text>
-            </Animated.View>
-
-            {/* Step Indicator */}
-            <View style={styles.stepIndicator}>
-              <View style={[styles.stepDot, step >= 1 && styles.activeStep]} />
-              <View style={[styles.stepLine, step >= 2 && styles.activeStep]} />
-              <View style={[styles.stepDot, step >= 2 && styles.activeStep]} />
+              </Text>
             </View>
 
-            {/* Auth Card */}
-            <AuthCard title={step === 1 ? "Sign In" : step === 2 ? "Enter Password" : "Processing"}>
-              {renderStepContent()}
-
-              {/* Sign Up Link (only shown in step 1) */}
-              {step === 1 && (
-                <Animatable.View animation="fadeIn" delay={300} style={styles.signUpContainer}>
-                  <Text style={styles.signUpText}>Don't have an account? </Text>
-                  <AuthButton
-                    title="Register here"
-                    onPress={() => navigation.navigate('Register')}
-                    variant="link"
-                    icon="person-add-outline"
-                    iconPosition="right"
+            {/* Login Card */}
+            <View style={styles.card}>
+              <Text style={styles.title}>Sign In</Text>
+              
+              {/* Email Input */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Email Address</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="mail-outline" size={20} color="#94A3B8" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your email"
+                    placeholderTextColor="#94A3B8"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    returnKeyType="next"
                   />
-                </Animatable.View>
-              )}
-            </AuthCard>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </View>
+                </View>
+              </View>
+
+              {/* Password Input */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Password</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="lock-closed-outline" size={20} color="#94A3B8" style={styles.inputIcon} />
+                  <TextInput
+                    style={[styles.input, { flex: 1 }]}
+                    placeholder="Enter your password"
+                    placeholderTextColor="#94A3B8"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={secureText}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    returnKeyType="done"
+                    onSubmitEditing={handleLogin}
+                  />
+                  <TouchableOpacity onPress={() => setSecureText(!secureText)}>
+                    <Ionicons 
+                      name={secureText ? "eye-outline" : "eye-off-outline"} 
+                      size={20} 
+                      color="#94A3B8" 
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Forgot Password */}
+              <TouchableOpacity 
+                style={styles.forgotPassword}
+                onPress={() => Alert.alert('Forgot Password', 'Feature coming soon')}
+              >
+                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              </TouchableOpacity>
+
+              {/* Login Button */}
+              <TouchableOpacity
+                style={[styles.button, (!email || !password || loading) && styles.buttonDisabled]}
+                onPress={handleLogin}
+                disabled={!email || !password || loading}
+                activeOpacity={0.8}
+              >
+                {loading ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <>
+                    <Text style={styles.buttonText}>Sign In</Text>
+                    <Ionicons name="arrow-forward" size={20} color="white" />
+                  </>
+                )}
+              </TouchableOpacity>
+
+              {/* Register Link */}
+              <View style={styles.registerContainer}>
+                <Text style={styles.registerText}>Don't have an account? </Text>
+                <TouchableOpacity 
+                  onPress={() => navigation.navigate('Register')}
+                  activeOpacity={0.6}
+                >
+                  <Text style={styles.registerLink}>Register here</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 
-const styles = {
+const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#0F172A',
+  },
+  background: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: '#0F172A',
   },
   keyboardView: {
@@ -289,115 +183,113 @@ const styles = {
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'flex-end',
-    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 40,
   },
   logoContainer: {
     alignItems: 'center',
     marginBottom: 40,
-    marginTop: 20,
+    marginTop: 60,
   },
   logo: {
     width: 140,
     height: 140,
     marginBottom: 16,
   },
-  appName: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#2563EB',
-    letterSpacing: 3,
-    marginBottom: 8,
-  },
   tagline: {
     fontSize: 14,
     color: '#94A3B8',
-    fontWeight: '500',
     textAlign: 'center',
     paddingHorizontal: 40,
     lineHeight: 20,
   },
-  stepIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 30,
-    marginHorizontal: 24,
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 15,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+    width: '100%',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
   },
-  stepDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#CBD5E1',
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1E293B',
+    textAlign: 'center',
+    marginBottom: 32,
   },
-  stepLine: {
-    flex: 1,
-    height: 2,
-    backgroundColor: '#CBD5E1',
-    marginHorizontal: 10,
-  },
-  activeStep: {
-    backgroundColor: '#2563EB',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  inputContainer: {
     marginBottom: 20,
   },
-  backButton: {
-    padding: 8,
-    marginRight: 12,
-  },
-  headerText: {
-    flex: 1,
-  },
-  stepTitle: {
-    fontSize: 22,
+  label: {
+    fontSize: 14,
     fontWeight: '600',
     color: '#1E293B',
-    marginBottom: 4,
-  },
-  emailText: {
-    fontSize: 14,
-    color: '#64748B',
-  },
-  stepSubtitle: {
-    fontSize: 14,
-    color: '#64748B',
-    marginBottom: 24,
-    lineHeight: 20,
-  },
-  buttonContainer: {
-    marginTop: 20,
-  },
-  forgotPasswordContainer: {
-    alignItems: 'flex-end',
-    marginTop: 16,
-    marginBottom: 24,
-  },
-  processingContainer: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  processingTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#1E293B',
-    marginTop: 20,
     marginBottom: 8,
   },
-  processingText: {
-    fontSize: 14,
-    color: '#64748B',
-    textAlign: 'center',
-    lineHeight: 20,
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: 'white',
   },
-  signUpContainer: {
+  inputIcon: {
+    marginRight: 12,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: '#1E293B',
+    padding: 0,
+    margin: 0,
+    minHeight: 24,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
+  forgotPassword: {
+    alignItems: 'flex-end',
+    marginBottom: 24,
+  },
+  forgotPasswordText: {
+    color: '#2563EB',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  button: {
+    backgroundColor: '#2563EB',
+    borderRadius: 10,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+  },
+  buttonDisabled: {
+    backgroundColor: '#94A3B8',
+    opacity: 0.7,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  registerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
@@ -406,8 +298,14 @@ const styles = {
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
   },
-  signUpText: {
+  registerText: {
     color: '#64748B',
     fontSize: 14,
   },
-};
+  registerLink: {
+    color: '#2563EB',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+});
