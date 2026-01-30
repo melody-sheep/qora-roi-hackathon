@@ -1,3 +1,4 @@
+// src/screens/navigation/AppNavigator.js - CORRECTED VERSION
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -16,7 +17,7 @@ const AppNavigator = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Login"
+        initialRouteName="Login" // Always start with Login
         screenOptions={{
           headerShown: false,
           gestureEnabled: false,
@@ -28,6 +29,8 @@ const AppNavigator = () => {
         <Stack.Screen name="StudentDashboard" component={StudentBottomTabs} />
         <Stack.Screen name="StudentAppointment" component={StudentAppointment} />
         <Stack.Screen name="StudentBooking" component={StudentBooking} />
+        <Stack.Screen name="FAQScreen" component={FAQScreen} />
+        <Stack.Screen name="MyDocument" component={MyDocument} />
       </Stack.Navigator>
     </NavigationContainer>
   );

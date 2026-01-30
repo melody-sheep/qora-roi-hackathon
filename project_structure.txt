@@ -1,19 +1,35 @@
 QORA-ROI-HACKATHON/
 ├── .expo/
 ├── assets/
+│  ├── qora_logo.png
 ├── node_modules/
 ├── src/
 │   ├── screens/
+│   │   ├── navigation/
+│   │   │   ├── AppNavigator.js
+│   │   │   ├── ClinicTabNavigator.js
+│   │   │   └── StudentBottomTabs.js
+│   │   │ 
 │   │   ├── clinic/
 │   │   │   ├── clinicDashboard.js
-│   │   │   ├──ManageAppointmentsScreen.js
+│   │   │   ├── clinicProfile.js
+│   │   │   ├── ManageAppointmentsScreen.js
 │   │   │   └── SetAvailabilityScreen.js
+│   │   │
 │   │   ├── student/
 │   │   │   └── studentDashboard.js
+│   │   │   ├── faq.js
+│   │   │   ├── myDocuments.js
+│   │   │   ├── studentAppointment.js
+│   │   │   └── studentBooking.js
+│   │   │
 │   │   ├── LoginScreen.js
 │   │   └── RegisterScreen.js
+│   │
+│   ├── services/
+│   │   └── supabase.js
+│   │   ├── auth.js
 │   └── styles/
-│       └── authStyles.js
 ├── .gitignore
 ├── 30hrs_development_plan.txt
 ├── App.js
