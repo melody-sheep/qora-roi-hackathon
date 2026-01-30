@@ -17,6 +17,8 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../services/supabase';
 import { authService } from '../services/auth';
 
 const { width, height } = Dimensions.get('window');
@@ -146,11 +148,27 @@ export default function LoginScreen() {
     setLoading(false);
     
     if (result.success) {
+      // Fetch and store user data
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('full_name, email, role')
+        .eq('email', email)
+        .single();
+
+      if (!userError && userData) {
+        // Store user data in AsyncStorage
+        await AsyncStorage.setItem('user', JSON.stringify({
+          full_name: userData.full_name,
+          email: userData.email,
+          role: userData.role
+        }));
+      }
+
       Alert.alert(
         '✅ Success!',
         'Logged in successfully!',
         [
-          { 
+          {
             text: 'OK',
             onPress: () => {
               if (result.user.role === 'doctor') {

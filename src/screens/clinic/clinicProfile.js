@@ -15,14 +15,21 @@ import {
   Dimensions,
   Switch,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../../services/supabase';
 
 const { width } = Dimensions.get('window');
 
 export default function ClinicProfile() {
   const navigation = useNavigation();
+  
+  // State for user and clinic data
+  const [doctorName, setDoctorName] = useState('Loading...');
+  const [doctorEmail, setDoctorEmail] = useState('');
+  const [clinicId, setClinicId] = useState(null);
   
   // Clinic profile data
   const [clinicProfile, setClinicProfile] = useState({
@@ -62,39 +69,240 @@ export default function ClinicProfile() {
     profileImage: 'https://via.placeholder.com/150', // Replace with actual image URL
   });
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState({});
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState('');
 
+  // Get doctor name and details from database (same as clinic dashboard)
+  const getDoctorDetails = async () => {
+    try {
+      // Prefer cached user in AsyncStorage
+      const storedCurrent = await AsyncStorage.getItem('currentUser');
+      const storedUser = await AsyncStorage.getItem('user');
+      
+      if (storedCurrent) {
+        try {
+          const parsed = JSON.parse(storedCurrent);
+          if (parsed.fullName || parsed.full_name || parsed.name) {
+            const name = parsed.fullName || parsed.full_name || parsed.name;
+            const email = parsed.email || '';
+            const cId = parsed.clinic_id || null;
+            setDoctorName(name);
+            setDoctorEmail(email);
+            setClinicId(cId);
+            
+            // Update clinic profile with fetched name
+            setClinicProfile(prevProfile => ({
+              ...prevProfile,
+              doctorName: name,
+              email: email
+            }));
+            return;
+          }
+        } catch (e) {
+          console.log('Parse error for currentUser:', e);
+        }
+      }
+      
+      if (storedUser) {
+        try {
+          const parsed = JSON.parse(storedUser);
+          if (parsed.full_name || parsed.name) {
+            const name = parsed.full_name || parsed.name;
+            const email = parsed.email || '';
+            setDoctorName(name);
+            setDoctorEmail(email);
+            
+            // Update clinic profile with fetched name
+            setClinicProfile(prevProfile => ({
+              ...prevProfile,
+              doctorName: name,
+              email: email
+            }));
+            return;
+          }
+        } catch (e) {
+          console.log('Parse error for user:', e);
+        }
+      }
+
+      // Get current session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+      }
+
+      if (!session || !session.user) {
+        console.log('No session found, using default');
+        setDoctorName('User');
+        return;
+      }
+
+      // Try to fetch user profile from users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('full_name, email, clinic_id')
+        .eq('email', session.user.email)
+        .single();
+
+      let name = null;
+      let email = session.user.email;
+      let cId = null;
+
+      if (!userError && userData) {
+        name = userData.full_name;
+        cId = userData.clinic_id;
+        console.log('✅ User data from database:', userData);
+      }
+
+      // Fallbacks
+      if (!name && session.user.user_metadata && session.user.user_metadata.full_name) {
+        name = session.user.user_metadata.full_name;
+      }
+      if (!name && session.user.email) {
+        name = session.user.email.split('@')[0];
+      }
+      if (!name) name = 'User';
+
+      setDoctorName(name);
+      setDoctorEmail(email);
+      setClinicId(cId);
+      
+      // Update clinic profile
+      setClinicProfile(prevProfile => ({
+        ...prevProfile,
+        doctorName: name,
+        email: email
+      }));
+
+      // Cache for next time
+      await AsyncStorage.setItem('user', JSON.stringify({ 
+        full_name: name, 
+        email: email,
+        clinic_id: cId
+      }));
+
+    } catch (error) {
+      console.error('Error in getDoctorDetails:', error);
+      setDoctorName('User');
+    }
+  };
+
   // Load clinic profile data
-  const loadClinicProfile = () => {
+  const loadClinicProfile = async () => {
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Get doctor details first
+      await getDoctorDetails();
+      
+      // Get clinic data if clinic_id exists
+      const cId = clinicId || await AsyncStorage.getItem('clinicId');
+      if (cId) {
+        const { data: clinicData, error: clinicError } = await supabase
+          .from('clinics')
+          .select('*')
+          .eq('id', cId)
+          .single();
+        
+        if (!clinicError && clinicData) {
+          console.log('✅ Clinic data from database:', clinicData);
+          
+          // Update profile with clinic data
+          setClinicProfile(prevProfile => ({
+            ...prevProfile,
+            id: clinicData.id || prevProfile.id,
+            name: clinicData.name || prevProfile.name,
+            tagline: clinicData.tagline || prevProfile.tagline,
+            specialty: clinicData.specialty || prevProfile.specialty,
+            email: doctorEmail || clinicData.email || prevProfile.email,
+            phone: clinicData.phone || prevProfile.phone,
+            address: clinicData.address || prevProfile.address,
+            clinicHours: clinicData.clinic_hours || prevProfile.clinicHours,
+            services: clinicData.services || prevProfile.services,
+            consultationFee: clinicData.consultation_fee || prevProfile.consultationFee,
+            rating: clinicData.rating || prevProfile.rating,
+            totalReviews: clinicData.total_reviews || prevProfile.totalReviews,
+            establishedYear: clinicData.established_year || prevProfile.establishedYear,
+            clinicSize: clinicData.clinic_size || prevProfile.clinicSize,
+            licenseNumber: clinicData.license_number || prevProfile.licenseNumber,
+            taxId: clinicData.tax_id || prevProfile.taxId,
+            clinicDescription: clinicData.description || prevProfile.clinicDescription,
+            profileImage: clinicData.profile_image || prevProfile.profileImage,
+          }));
+        }
+      }
+      
       setLoading(false);
-    }, 500);
+    } catch (error) {
+      console.error('Error loading profile:', error);
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     loadClinicProfile();
   }, []);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      loadClinicProfile();
+    }, [])
+  );
+
   const handleEdit = () => {
     setEditData({ ...clinicProfile });
     setEditing(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setLoading(true);
-    // Simulate API update
-    setTimeout(() => {
+    try {
+      if (!clinicId) {
+        Alert.alert('Error', 'No clinic ID found');
+        setLoading(false);
+        return;
+      }
+
+      // Update clinic in Supabase
+      const { error } = await supabase
+        .from('clinics')
+        .update({
+          name: editData.name,
+          tagline: editData.tagline,
+          specialty: editData.specialty,
+          phone: editData.phone,
+          address: editData.address,
+          clinic_hours: editData.clinicHours,
+          services: editData.services,
+          consultation_fee: editData.consultationFee,
+          clinic_size: editData.clinicSize,
+          established_year: parseInt(editData.establishedYear),
+          license_number: editData.licenseNumber,
+          tax_id: editData.taxId,
+          description: editData.clinicDescription,
+          profile_image: editData.profileImage,
+        })
+        .eq('id', clinicId);
+
+      if (error) {
+        console.error('❌ Update error:', error);
+        Alert.alert('Error', 'Failed to update profile');
+        setLoading(false);
+        return;
+      }
+
       setClinicProfile(editData);
       setEditing(false);
       setLoading(false);
       Alert.alert('Success', 'Profile updated successfully');
-    }, 1000);
+      console.log('✅ Profile updated successfully');
+    } catch (error) {
+      console.error('🔥 Save error:', error);
+      Alert.alert('Error', 'Failed to save profile');
+      setLoading(false);
+    }
   };
 
   const handleCancel = () => {
