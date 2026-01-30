@@ -435,10 +435,11 @@ const styles = StyleSheet.create({
     zIndex: 5,
   },
   logo: {
-    width: 140,
-    height: 140,
-    marginBottom: 20,
+    width: 170,
+    height: 170,
+    marginBottom: 10,
     zIndex: 6,
+    
   },
   welcomeTitle: {
     fontSize: 28,
