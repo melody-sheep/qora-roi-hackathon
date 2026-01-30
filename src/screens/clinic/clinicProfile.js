@@ -11,13 +11,16 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
-  SafeAreaView,
   Dimensions,
   Switch,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../../services/supabase';
+import { authService } from '../../services/auth';
 
 const { width } = Dimensions.get('window');
 
@@ -26,12 +29,11 @@ export default function ClinicProfile() {
   
   // Clinic profile data
   const [clinicProfile, setClinicProfile] = useState({
-    id: '1',
-    name: 'Metro Health Clinic',
+    name: 'Loading...',
+    email: 'Loading...',
     tagline: 'Quality Healthcare for All',
     doctorName: 'Dr. Maria Santos',
     specialty: 'General Medicine & Family Practice',
-    email: 'dr.maria@metrohealth.com',
     phone: '+63 912 345 6789',
     address: 'USTP, Lapasan, CDO',
     clinicHours: {
@@ -59,22 +61,67 @@ export default function ClinicProfile() {
     licenseNumber: 'PRC-123456',
     taxId: '123-456-789-000',
     clinicDescription: 'Metro Health Clinic provides comprehensive healthcare services with a patient-centered approach. We believe in accessible, quality healthcare for all members of the community.',
-    profileImage: 'https://via.placeholder.com/150', // Replace with actual image URL
+    profileImage: 'https://via.placeholder.com/150',
   });
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState({});
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState('');
+  const [newService, setNewService] = useState('');
 
-  // Load clinic profile data
-  const loadClinicProfile = () => {
-    setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+  // Load clinic profile from AsyncStorage and fetch name/email from DB
+  const loadClinicProfile = async () => {
+    try {
+      setLoading(true);
+      
+      // 1. Get current user to know which clinic to fetch
+      const currentUser = await authService.getCurrentUser();
+      if (!currentUser) {
+        Alert.alert('Error', 'Please login first');
+        navigation.goBack();
+        return;
+      }
+      
+      // 2. Try to fetch clinic name/email from database (SIMPLIFIED - just name & email)
+      try {
+        const { data: clinicData, error } = await supabase
+          .from('clinics')
+          .select('name, email')
+          .eq('id', currentUser.clinic_id || 123) // Use user's clinic_id or default
+          .maybeSingle();
+        
+        if (!error && clinicData) {
+          // Update name and email from database
+          setClinicProfile(prev => ({
+            ...prev,
+            name: clinicData.name || 'Your Clinic',
+            email: clinicData.email || currentUser.email
+          }));
+        }
+      } catch (dbError) {
+        console.log('Using default clinic name/email');
+      }
+      
+      // 3. Load other profile data from AsyncStorage (local storage)
+      const savedProfile = await AsyncStorage.getItem('clinicProfile');
+      if (savedProfile) {
+        const parsedProfile = JSON.parse(savedProfile);
+        // Keep name/email from DB, everything else from storage
+        setClinicProfile(prev => ({
+          ...parsedProfile,
+          name: prev.name, // Keep DB name
+          email: prev.email // Keep DB email
+        }));
+      }
+      
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   useEffect(() => {
@@ -86,19 +133,28 @@ export default function ClinicProfile() {
     setEditing(true);
   };
 
-  const handleSave = () => {
-    setLoading(true);
-    // Simulate API update
-    setTimeout(() => {
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      
+      // Save to AsyncStorage (local storage)
+      await AsyncStorage.setItem('clinicProfile', JSON.stringify(editData));
+      
+      // Update local state
       setClinicProfile(editData);
       setEditing(false);
-      setLoading(false);
-      Alert.alert('Success', 'Profile updated successfully');
-    }, 1000);
+      
+      Alert.alert('Success', 'Profile saved locally!');
+      
+    } catch (error) {
+      console.error('Error saving:', error);
+      Alert.alert('Error', 'Failed to save profile');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancel = () => {
-    setEditing(false);
     Alert.alert(
       'Discard Changes',
       'Are you sure you want to discard your changes?',
@@ -120,6 +176,15 @@ export default function ClinicProfile() {
       : [...editData.services, service];
     
     setEditData({ ...editData, services: updatedServices });
+  };
+
+  const handleAddService = () => {
+    if (newService.trim() && !editData.services.includes(newService.trim())) {
+      const updatedServices = [...editData.services, newService.trim()];
+      setEditData({ ...editData, services: updatedServices });
+      setNewService('');
+    }
+    setModalVisible(false);
   };
 
   const handleImagePick = async (fromCamera) => {
@@ -191,15 +256,19 @@ export default function ClinicProfile() {
     return stars;
   };
 
-  const renderEditField = (label, value, field, multiline = false) => (
+  const renderEditField = (label, value, field, multiline = false, numeric = false) => (
     <View style={styles.editField}>
       <Text style={styles.editLabel}>{label}</Text>
       <TextInput
         style={[styles.editInput, multiline && styles.multilineInput]}
-        value={editData[field]}
-        onChangeText={(text) => setEditData({ ...editData, [field]: text })}
+        value={editData[field]?.toString() || ''}
+        onChangeText={(text) => setEditData({ 
+          ...editData, 
+          [field]: numeric ? (text ? parseInt(text) || 0 : '') : text 
+        })}
         multiline={multiline}
         numberOfLines={multiline ? 3 : 1}
+        keyboardType={numeric ? 'numeric' : 'default'}
       />
     </View>
   );
@@ -229,12 +298,17 @@ export default function ClinicProfile() {
         <TouchableOpacity 
           style={styles.editButton}
           onPress={editing ? handleSave : handleEdit}
+          disabled={saving}
         >
-          <Ionicons 
-            name={editing ? "checkmark" : "create-outline"} 
-            size={22} 
-            color="white" 
-          />
+          {saving ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <Ionicons 
+              name={editing ? "checkmark" : "create-outline"} 
+              size={22} 
+              color="white" 
+            />
+          )}
         </TouchableOpacity>
       </View>
 
@@ -342,8 +416,9 @@ export default function ClinicProfile() {
             {editing ? (
               <>
                 {renderEditField('Address', editData.address, 'address', true)}
-                {renderEditField('Established Year', editData.establishedYear.toString(), 'establishedYear')}
+                {renderEditField('Established Year', editData.establishedYear, 'establishedYear', false, true)}
                 {renderEditField('Clinic Size', editData.clinicSize, 'clinicSize')}
+                {renderEditField('Consultation Fee', editData.consultationFee, 'consultationFee', false, true)}
               </>
             ) : (
               <>
@@ -361,6 +436,11 @@ export default function ClinicProfile() {
                   <Ionicons name="people-outline" size={18} color="#64748B" />
                   <Text style={styles.infoLabel}>Clinic Size:</Text>
                   <Text style={styles.infoValue}>{clinicProfile.clinicSize}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Ionicons name="cash-outline" size={18} color="#64748B" />
+                  <Text style={styles.infoLabel}>Consultation Fee:</Text>
+                  <Text style={styles.infoValue}>₱{clinicProfile.consultationFee}</Text>
                 </View>
               </>
             )}
@@ -490,12 +570,28 @@ export default function ClinicProfile() {
             <View style={styles.infoRow}>
               <Ionicons name="shield-checkmark-outline" size={18} color="#64748B" />
               <Text style={styles.infoLabel}>PRC License:</Text>
-              <Text style={styles.infoValue}>{clinicProfile.licenseNumber}</Text>
+              {editing ? (
+                <TextInput
+                  style={[styles.infoValue, { flex: 1, padding: 4, backgroundColor: '#F8FAFC', borderRadius: 4 }]}
+                  value={editData.licenseNumber}
+                  onChangeText={(text) => setEditData({ ...editData, licenseNumber: text })}
+                />
+              ) : (
+                <Text style={styles.infoValue}>{clinicProfile.licenseNumber}</Text>
+              )}
             </View>
             <View style={styles.infoRow}>
               <Ionicons name="card-outline" size={18} color="#64748B" />
               <Text style={styles.infoLabel}>Tax ID:</Text>
-              <Text style={styles.infoValue}>{clinicProfile.taxId}</Text>
+              {editing ? (
+                <TextInput
+                  style={[styles.infoValue, { flex: 1, padding: 4, backgroundColor: '#F8FAFC', borderRadius: 4 }]}
+                  value={editData.taxId}
+                  onChangeText={(text) => setEditData({ ...editData, taxId: text })}
+                />
+              ) : (
+                <Text style={styles.infoValue}>{clinicProfile.taxId}</Text>
+              )}
             </View>
           </View>
         </View>
@@ -505,16 +601,17 @@ export default function ClinicProfile() {
             <TouchableOpacity 
               style={styles.cancelButton}
               onPress={handleCancel}
+              disabled={saving}
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
-              style={styles.saveButton}
+              style={[styles.saveButton, saving && styles.saveButtonDisabled]}
               onPress={handleSave}
-              disabled={loading}
+              disabled={saving}
             >
-              {loading ? (
+              {saving ? (
                 <ActivityIndicator size="small" color="white" />
               ) : (
                 <Text style={styles.saveButtonText}>Save Changes</Text>
@@ -547,9 +644,15 @@ export default function ClinicProfile() {
               <TextInput
                 style={styles.serviceInput}
                 placeholder="Enter service name"
+                value={newService}
+                onChangeText={setNewService}
                 autoFocus
               />
-              <TouchableOpacity style={styles.modalAddButton}>
+              <TouchableOpacity 
+                style={styles.modalAddButton}
+                onPress={handleAddService}
+                disabled={!newService.trim()}
+              >
                 <Text style={styles.modalAddButtonText}>Add Service</Text>
               </TouchableOpacity>
             </View>
@@ -597,6 +700,7 @@ export default function ClinicProfile() {
   );
 }
 
+// STYLES - EXACTLY THE SAME AS YOUR ORIGINAL
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -971,6 +1075,9 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  saveButtonDisabled: {
+    opacity: 0.7,
   },
   
   // MODAL

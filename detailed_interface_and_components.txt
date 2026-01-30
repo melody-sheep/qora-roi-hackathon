@@ -168,7 +168,7 @@ text
 📅 CHOOSE DATE
 ══════════════
 
-March 2024
+March 2026
 S  M  T  W  T  F  S
                 1  2
 3  4  5  6  7  8  9
@@ -181,7 +181,7 @@ LEGEND:
 🟡 Few slots left
 🔴 Fully booked
 
-Selected: March 15, 2024 (Friday)
+Selected: March 15, 6 (Friday)
 
 [⬅️ Back]  [See Time Slots ➡️]
 [10] TIME SLOT SELECTION (REAL-TIME)
@@ -210,7 +210,7 @@ text
 
 📋 APPOINTMENT DETAILS:
 Service: 🦷 Dental Checkup
-Date: March 15, 2024 (Friday)
+Date: March 15, 2026 (Friday)
 Time: 2:00 PM - 2:45 PM
 Doctor: Dr. Cruz
 Location: USTP Medical Clinic, Room 201
@@ -232,7 +232,7 @@ text
 🎉 APPOINTMENT CONFIRMED!
 ══════════════════════════
 
-✅ Booking ID: #QORA-2024-0156
+✅ Booking ID: #QORA-2026-0156
 ✅ Service: Dental Checkup
 ✅ Date: March 15, 2:00 PM
 ✅ Doctor: Dr. Cruz
@@ -271,14 +271,14 @@ text
 📊 Yearly usage: 2/5 appointments
 [14] APPOINTMENT DETAILS
 text
-📄 APPOINTMENT #QORA-2024-0156
+📄 APPOINTMENT #QORA-2026-0156
 ══════════════════════════════
 
 STATUS: 🟢 CONFIRMED
 👤 Patient: [Your Name], SID-2023-001
 🏥 Service: Dental Checkup (45 mins)
 👨‍⚕️ Doctor: Dr. Maria Cruz
-📅 Date: March 15, 2024
+📅 Date: March 15, 2026
 ⏰ Time: 2:00 PM - 2:45 PM
 📍 Location: USTP Clinic, Building 2, Room 201
 
@@ -347,7 +347,7 @@ text
 ═══════════════════
 
 👋 Good morning, Dr. [Last Name]
-📅 Friday, March 15, 2024
+📅 Friday, March 15, 2026
 ⏰ Current time: 9:15 AM
 
 📊 TODAY'S OVERVIEW:
@@ -370,7 +370,7 @@ text
 📅 MANAGE WEEKLY SCHEDULE
 ══════════════════════════
 
-Week of March 18-22, 2024
+Week of March 18-22, 2026
 
 [Copy from last week] [Use template]
 
@@ -459,7 +459,7 @@ text
 🎓 BS Computer Science, 1st Year
 
 📅 APPOINTMENT HISTORY (2):
-1. Mar 1, 2024: Medical - Dr. Santos ✅
+1. Mar 1, 2026: Medical - Dr. Santos ✅
 2. Today, 2:00 PM: Dental - Dr. Cruz 🟡
 
 📝 CURRENT APPOINTMENT:
@@ -479,7 +479,7 @@ text
 📅 MANAGE APPOINTMENT
 ══════════════════════
 
-Appointment: #QORA-2024-0156
+Appointment: #QORA-2026-0156
 Patient: Harry Inidal
 Time: 2:00 PM Today
 

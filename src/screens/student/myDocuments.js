@@ -108,7 +108,7 @@ export default function MyDocumentationScreen() {
           uploadDate: new Date().toISOString().split('T')[0],
           status: 'pending',
           semester: 'Current Semester',
-          academicYear: '2024-2025',
+          academicYear: '2026-2025',
           documentType: 'COR',
         };
         handleFileUpload(file);
@@ -136,7 +136,7 @@ export default function MyDocumentationScreen() {
           uploadDate: new Date().toISOString().split('T')[0],
           status: 'pending',
           semester: 'Current Semester',
-          academicYear: '2024-2025',
+          academicYear: '2026-2027',
           documentType: 'COR',
         };
         handleFileUpload(file);
@@ -165,7 +165,7 @@ export default function MyDocumentationScreen() {
           uploadDate: new Date().toISOString().split('T')[0],
           status: 'pending',
           semester: 'Current Semester',
-          academicYear: '2024-2025',
+          academicYear: '2026-2027',
           documentType: 'COR',
         };
         handleFileUpload(file);

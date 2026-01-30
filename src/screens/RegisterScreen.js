@@ -826,7 +826,7 @@ export default function RegisterScreen() {
 
               {/* Footer Inside White Form */}
               <View style={styles.footer}>
-                <Text style={styles.footerText}>© 2024 QORA Healthcare. All rights reserved.</Text>
+                <Text style={styles.footerText}>© 2026 QORA Healthcare. All rights reserved.</Text>
                 <View style={styles.footerLinks}>
                   <TouchableOpacity 
                     onPress={() => Alert.alert('Terms', 'Terms of service')}

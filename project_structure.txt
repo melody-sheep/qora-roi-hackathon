@@ -1,41 +1,65 @@
 QORA-ROI-HACKATHON/
-├── .expo/
-├── assets/
-│  ├── qora_logo.png
-├── node_modules/
+├── .expo/                          # Expo development files
+├── assets/                         # Static assets
+│  └── qora_logo.png               # App logo
+├── node_modules/                   # NPM dependencies
 ├── src/
-│   ├── screens/
-│   │   ├── navigation/
-│   │   │   ├── AppNavigator.js
-│   │   │   ├── ClinicTabNavigator.js
-│   │   │   └── StudentBottomTabs.js
+│   ├── screens/                   # All screen components
+│   │   ├── navigation/            # Navigation configuration
+│   │   │   ├── AppNavigator.js           # Root navigator
+│   │   │   ├── ClinicTabNavigator.js     # Clinic user tabs
+│   │   │   └── StudentBottomTabs.js      # Student user tabs
 │   │   │ 
-│   │   ├── clinic/
-│   │   │   ├── clinicDashboard.js
-│   │   │   ├── clinicProfile.js
-│   │   │   ├── ManageAppointmentsScreen.js
-│   │   │   └── SetAvailabilityScreen.js
+│   │   ├── clinic/                # Clinic user screens
+│   │   │   ├── clinicDashboard.js        # Clinic overview dashboard
+│   │   │   ├── clinicProfile.js          # Clinic profile management
+│   │   │   ├── ManageAppointmentsScreen.js # View/manage appointments
+│   │   │   └── SetAvailabilityScreen.js  # Set doctor availability slots
 │   │   │
-│   │   ├── student/
-│   │   │   └── studentDashboard.js
-│   │   │   ├── faq.js
-│   │   │   ├── myDocuments.js
-│   │   │   ├── studentAppointment.js
-│   │   │   └── studentBooking.js
+│   │   ├── student/               # Student user screens
+│   │   │   ├── studentDashboard.js       # Student overview dashboard
+│   │   │   ├── faq.js                    # Frequently Asked Questions
+│   │   │   ├── myDocuments.js            # Document upload/management
+│   │   │   ├── studentAppointment.js     # View appointments history
+│   │   │   └── studentBooking.js         # Book new appointments
 │   │   │
-│   │   ├── LoginScreen.js
-│   │   └── RegisterScreen.js
+│   │   ├── LoginScreen.js         # User authentication login
+│   │   └── RegisterScreen.js      # User registration
 │   │
-│   ├── services/
-│   │   └── supabase.js
-│   │   ├── auth.js
-│   └── styles/
-├── .gitignore
-├── 30hrs_development_plan.txt
-├── App.js
-├── app.json
-├── detailed_interface_and_components.txt
-├── index.js
-├── package-lock.json
-├── package.json
-└── project_structure.txt
+│   ├── services/                  # Business logic and API services
+│   │   ├── mockDatabase/         # AsyncStorage-based mock database
+│   │   │   ├── index.js                 # Main export hub for mock DB
+│   │   │   ├── constants.js             # Table names, seed data, constants
+│   │   │   ├── init.js                  # Database initialization/seed
+│   │   │   ├── appointments.js          # Appointments CRUD operations
+│   │   │   ├── availability.js          # Availability slots CRUD
+│   │   │   ├── services.js              # Service types CRUD
+│   │   │   ├── documents.js             # Document management CRUD
+│   │   │   ├── profiles.js              # User profile CRUD
+│   │   │   ├── faq.js                   # FAQ content CRUD
+│   │   │   ├── notifications.js         # Notification system CRUD
+│   │   │   └── sync.js                  # Data synchronization logic
+│   │   │
+│   │   ├── database.js           # Unified database interface (mock/real switch)
+│   │   ├── supabase.js           # Supabase configuration (real DB)
+│   │   └── auth.js               # Authentication services
+│   │
+│   ├── contexts/                 # React Context providers
+│   │   └── DatabaseContext.js    # Provides mock database to all components
+│   │
+│   ├── utils/                    # Utility functions
+│   │   ├── storageHelpers.js     # AsyncStorage helper functions
+│   │   ├── validation.js         # Data validation utilities
+│   │   └── formatters.js         # Date/time/formatter utilities
+│   │
+│   └── styles/                   # Global styles and themes
+│
+├── .gitignore                    # Git ignore file
+├── 30hrs_development_plan.txt    # Development timeline
+├── App.js                        # Main app component (updated with DatabaseProvider)
+├── app.json                      # Expo app configuration
+├── detailed_interface_and_components.txt # UI/UX specifications
+├── index.js                      # App entry point
+├── package-lock.json             # NPM lock file
+├── package.json                  # Project dependencies
+└── project_structure.txt         # This file - project structure documentation
