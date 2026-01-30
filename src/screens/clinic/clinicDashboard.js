@@ -15,8 +15,7 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-
+import { supabase } from '../../services/supabase'; // Make sure this import exists
 
 const { width } = Dimensions.get('window');
 
@@ -24,7 +23,7 @@ export default function ClinicDashboard() {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [doctorName, setDoctorName] = useState(''); // Add state for doctor name
+  const [doctorName, setDoctorName] = useState('Loading...'); // Changed initial state
   
   // Today's data
   const today = new Date();
@@ -72,22 +71,76 @@ export default function ClinicDashboard() {
     ],
   };
 
-  // Function to get doctor's name from storage
+  // Function to get logged-in user's display name
   const getDoctorName = async () => {
     try {
-      const userString = await AsyncStorage.getItem('user');
-      if (userString) {
-        const user = JSON.parse(userString);
-        // Add "Dr." prefix if not already there
-        let name = user.fullName || '';
-        if (name && !name.startsWith('Dr.')) {
-          name = `Dr. ${name}`;
+      // Prefer cached user in AsyncStorage (check both keys used in app)
+      const storedCurrent = await AsyncStorage.getItem('currentUser');
+      const storedUser = await AsyncStorage.getItem('user');
+      if (storedCurrent) {
+        try {
+          const parsed = JSON.parse(storedCurrent);
+          if (parsed.fullName || parsed.full_name || parsed.name) {
+            setDoctorName(parsed.fullName || parsed.full_name || parsed.name);
+            return;
+          }
+        } catch (e) {
+          // ignore parse errors and continue
         }
-        setDoctorName(name);
       }
+      if (storedUser) {
+        try {
+          const parsed = JSON.parse(storedUser);
+          if (parsed.full_name || parsed.name) {
+            setDoctorName(parsed.full_name || parsed.name);
+            return;
+          }
+        } catch (e) {
+          // ignore parse errors and continue
+        }
+      }
+
+      // Get current session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+      }
+
+      if (!session || !session.user) {
+        console.log('No session found');
+        setDoctorName('User');
+        return;
+      }
+
+      // Try to fetch user profile from users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('full_name, email, role')
+        .eq('email', session.user.email)
+        .single();
+
+      let name = null;
+      if (!userError && userData && userData.full_name) {
+        name = userData.full_name;
+      }
+
+      // Fallbacks: session metadata or email local-part
+      if (!name && session.user.user_metadata && session.user.user_metadata.full_name) {
+        name = session.user.user_metadata.full_name;
+      }
+      if (!name && session.user.email) {
+        name = session.user.email.split('@')[0];
+      }
+      if (!name) name = 'User';
+
+      setDoctorName(name);
+
+      // Cache for next time
+      await AsyncStorage.setItem('user', JSON.stringify({ full_name: name, email: session.user.email }));
+
     } catch (error) {
-      console.error('Error getting doctor name:', error);
-      setDoctorName('Doctor'); // Fallback name
+      console.error('Error in getDoctorName:', error);
+      setDoctorName('User');
     }
   };
 
@@ -100,6 +153,10 @@ export default function ClinicDashboard() {
         setLoading(false);
         setRefreshing(false);
       }, 1000);
+    }).catch(error => {
+      console.error('Error loading dashboard:', error);
+      setLoading(false);
+      setRefreshing(false);
     });
   };
 
@@ -152,7 +209,7 @@ export default function ClinicDashboard() {
   };
 
   const handleViewProfile = () => {
-  navigation.navigate('Profile');
+    navigation.navigate('Profile');
   };
 
   
@@ -182,32 +239,32 @@ export default function ClinicDashboard() {
         showsVerticalScrollIndicator={false}
       >
         {/* HEADER SECTION */}
-<View style={styles.header}>
-  <View style={styles.headerTop}>
-    <View>
-      <Text style={styles.greeting}>Good morning,</Text>
-      <TouchableOpacity onPress={handleViewProfile}>
-        <View style={styles.doctorNameContainer}>
-          <Text style={styles.doctorName}>
-            {doctorName || 'Loading...'}
-          </Text>
-          <Ionicons name="chevron-forward" size={16} color="white" style={styles.profileArrow} />
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
+            <View>
+              <Text style={styles.greeting}>Good morning,</Text>
+              <TouchableOpacity onPress={handleViewProfile}>
+                <View style={styles.doctorNameContainer}>
+                  <Text style={styles.doctorName}>
+                    {doctorName}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={16} color="white" style={styles.profileArrow} />
+                </View>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.clinicStatusIndicator}>
+              <View style={[
+                styles.statusDot, 
+                { backgroundColor: clinicData.clinicStatus === 'OPEN' ? '#10B981' : '#EF4444' }
+              ]} />
+              <Text style={styles.clinicStatusText}>
+                {clinicData.clinicStatus}
+              </Text>
+            </View>
+          </View>
+          <Text style={styles.dateTime}>{formattedDate}</Text>
+          <Text style={styles.currentTime}>Current time: {currentTime}</Text>
         </View>
-      </TouchableOpacity>
-    </View>
-    <View style={styles.clinicStatusIndicator}>
-      <View style={[
-        styles.statusDot, 
-        { backgroundColor: clinicData.clinicStatus === 'OPEN' ? '#10B981' : '#EF4444' }
-      ]} />
-      <Text style={styles.clinicStatusText}>
-        {clinicData.clinicStatus}
-      </Text>
-    </View>
-  </View>
-  <Text style={styles.dateTime}>{formattedDate}</Text>
-  <Text style={styles.currentTime}>Current time: {currentTime}</Text>
-</View>
 
         {/* TODAY'S OVERVIEW STATS */}
         <View style={styles.section}>
@@ -217,33 +274,33 @@ export default function ClinicDashboard() {
               <Text style={styles.viewAllText}>Details</Text>
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
               <Text style={styles.statNumber}>{clinicData.todayStats.totalAppointments}</Text>
               <Text style={styles.statLabel}>Total</Text>
             </View>
-            
+
             <View style={[styles.statCard, styles.statCardPrimary]}>
               <Text style={[styles.statNumber, { color: '#10B981' }]}>{clinicData.todayStats.completed}</Text>
               <Text style={styles.statLabel}>Completed</Text>
             </View>
-            
+
             <View style={[styles.statCard, styles.statCardPrimary]}>
               <Text style={[styles.statNumber, { color: '#F59E0B' }]}>{clinicData.todayStats.inProgress}</Text>
               <Text style={styles.statLabel}>In Progress</Text>
             </View>
-            
+
             <View style={[styles.statCard, styles.statCardPrimary]}>
               <Text style={[styles.statNumber, { color: '#3B82F6' }]}>{clinicData.todayStats.waiting}</Text>
               <Text style={styles.statLabel}>Waiting</Text>
             </View>
-            
+
             <View style={[styles.statCard, styles.statCardSuccess]}>
               <Text style={[styles.statNumber, { color: '#10B981' }]}>{clinicData.todayStats.availableSlots}</Text>
               <Text style={styles.statLabel}>Available</Text>
             </View>
-            
+
             <View style={[styles.statCard, styles.statCardError]}>
               <Text style={[styles.statNumber, { color: '#EF4444' }]}>{clinicData.todayStats.cancellations}</Text>
               <Text style={styles.statLabel}>Cancelled</Text>
@@ -255,7 +312,7 @@ export default function ClinicDashboard() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.actionsGrid}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.actionCard}
               onPress={handleSetAvailability}
             >
@@ -264,8 +321,8 @@ export default function ClinicDashboard() {
               </View>
               <Text style={styles.actionText}>Set Availability</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.actionCard}
               onPress={handleViewQueue}
             >
@@ -274,8 +331,8 @@ export default function ClinicDashboard() {
               </View>
               <Text style={styles.actionText}>Today's Queue</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.actionCard}
               onPress={handleAddEmergencySlot}
             >
@@ -284,8 +341,8 @@ export default function ClinicDashboard() {
               </View>
               <Text style={styles.actionText}>Emergency Slot</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.actionCard}
               onPress={handleSendAnnouncement}
             >
@@ -305,19 +362,19 @@ export default function ClinicDashboard() {
               <Text style={styles.viewAllText}>View All</Text>
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.scheduleCard}>
             {clinicData.todaySchedule.slice(0, 4).map((appointment) => (
               <View key={appointment.id} style={styles.appointmentItem}>
                 <View style={styles.appointmentTimeContainer}>
                   <Text style={styles.appointmentTime}>{appointment.time}</Text>
                 </View>
-                
+
                 <View style={styles.appointmentDetails}>
                   <Text style={styles.patientName}>{appointment.patient}</Text>
                   <Text style={styles.serviceText}>{appointment.service}</Text>
                 </View>
-                
+
                 <View style={[
                   styles.statusBadge,
                   { backgroundColor: `${getStatusColor(appointment.status)}15` }
@@ -353,9 +410,9 @@ export default function ClinicDashboard() {
                   </Text>
                 </View>
               </View>
-              
+
               <View style={styles.infoDivider} />
-              
+
               <View style={styles.infoItem}>
                 <Ionicons name="calendar-outline" size={18} color="#64748B" style={styles.infoIcon} />
                 <View style={styles.infoContent}>
@@ -366,23 +423,23 @@ export default function ClinicDashboard() {
                 </View>
               </View>
             </View>
-            
+
             {/* Capacity Summary */}
             <View style={styles.capacityContainer}>
               <View style={styles.capacityItem}>
                 <Text style={styles.capacityNumber}>{clinicData.todayStats.availableSlots}</Text>
                 <Text style={styles.capacityLabel}>Available Slots</Text>
               </View>
-              
+
               <View style={styles.capacityDivider} />
-              
+
               <View style={styles.capacityItem}>
                 <Text style={styles.capacityNumber}>{clinicData.todayStats.totalAppointments}</Text>
                 <Text style={styles.capacityLabel}>Total Booked</Text>
               </View>
-              
+
               <View style={styles.capacityDivider} />
-              
+
               <View style={styles.capacityItem}>
                 <Text style={styles.capacityNumber}>{clinicData.todayStats.waiting}</Text>
                 <Text style={styles.capacityLabel}>Currently Waiting</Text>
@@ -399,21 +456,21 @@ export default function ClinicDashboard() {
               <Text style={styles.viewAllText}>View All</Text>
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.updatesCard}>
             {clinicData.quickUpdates.map((update) => (
               <View key={update.id} style={styles.updateItem}>
                 <View style={[
                   styles.updateIcon,
-                  { backgroundColor: update.type === 'booking' ? '#D1FAE5' : 
+                  { backgroundColor: update.type === 'booking' ? '#D1FAE5' :
                                  update.type === 'cancellation' ? '#FEE2E2' : '#DBEAFE' }
                 ]}>
-                  <Ionicons 
-                    name={update.type === 'booking' ? 'add' : 
-                          update.type === 'cancellation' ? 'remove' : 'alert'} 
-                    size={14} 
-                    color={update.type === 'booking' ? '#10B981' : 
-                           update.type === 'cancellation' ? '#EF4444' : '#3B82F6'} 
+                  <Ionicons
+                    name={update.type === 'booking' ? 'add' :
+                          update.type === 'cancellation' ? 'remove' : 'alert'}
+                    size={14}
+                    color={update.type === 'booking' ? '#10B981' :
+                           update.type === 'cancellation' ? '#EF4444' : '#3B82F6'}
                   />
                 </View>
                 <View style={styles.updateContent}>
@@ -455,7 +512,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontSize: 14,
   },
-  
+
   // HEADER SECTION
   header: {
     backgroundColor: '#0F172A',
@@ -510,7 +567,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  
+
   // SECTIONS
   section: {
     paddingHorizontal: 20,
@@ -532,7 +589,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: 14,
   },
-  
+
   // STATS GRID
   statsGrid: {
     flexDirection: 'row',
@@ -577,7 +634,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontWeight: '500',
   },
-  
+
   // QUICK ACTIONS
   actionsGrid: {
     flexDirection: 'row',
@@ -613,7 +670,7 @@ const styles = StyleSheet.create({
     color: '#1E293B',
     textAlign: 'center',
   },
-  
+
   // SCHEDULE CARD
   scheduleCard: {
     backgroundColor: '#FFFFFF',
@@ -675,7 +732,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textTransform: 'capitalize',
   },
-  
+
   // INFO CARD - FIXED
   infoCard: {
     backgroundColor: '#FFFFFF',
@@ -727,7 +784,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E2E8F0',
     marginHorizontal: 16,
   },
-  
+
   // CAPACITY CONTAINER
   capacityContainer: {
     flexDirection: 'row',
@@ -755,7 +812,7 @@ const styles = StyleSheet.create({
     height: 40,
     backgroundColor: '#E2E8F0',
   },
-  
+
   // UPDATES CARD
   updatesCard: {
     backgroundColor: '#FFFFFF',
@@ -797,17 +854,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#94A3B8',
   },
-  
+
   // FOOTER
   footer: {
     height: 20,
   },
   doctorNameContainer: {
-  flexDirection: 'row',
-  alignItems: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   profileArrow: {
-  marginLeft: 6,
+    marginLeft: 6,
   },
-
 });

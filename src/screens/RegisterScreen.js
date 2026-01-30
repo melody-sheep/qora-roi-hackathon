@@ -22,6 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { authService } from '../services/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -366,6 +367,25 @@ export default function RegisterScreen() {
         [{
           text: 'OK',
           onPress: () => {
+            // Cache the newly created user so dashboards update immediately
+            try {
+              const createdUser = result.user || {};
+              const userObject = {
+                id: createdUser.id || null,
+                email: createdUser.email || email,
+                role: createdUser.role || role,
+                fullName: createdUser.fullName || fullName,
+                full_name: createdUser.fullName || fullName,
+                hasFile: createdUser.hasFile || !!attachedFile,
+                clinic_id: createdUser.clinic_id || clinicId || null,
+              };
+              AsyncStorage.setItem('currentUser', JSON.stringify(userObject));
+              // some parts of the app expect 'user'
+              AsyncStorage.setItem('user', JSON.stringify({ full_name: userObject.fullName, email: userObject.email }));
+            } catch (e) {
+              console.warn('Failed to cache user after register', e);
+            }
+
             // Navigate based on role
             if (role === 'doctor') {
               navigation.navigate('ClinicMain');
