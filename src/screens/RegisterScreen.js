@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,21 +10,124 @@ import {
   Alert,
   Image,
   StatusBar,
-  TouchableWithoutFeedback,
-  Keyboard,
   StyleSheet,
   ActivityIndicator,
   Modal,
   Pressable,
+  Dimensions,
+  Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import { authService } from '../services/auth';
+
+const { width, height } = Dimensions.get('window');
+
+// Particle Component for animated background
+const Particle = ({ size, duration, delay, startX, startY }) => {
+  const translateX = useRef(new Animated.Value(startX)).current;
+  const translateY = useRef(new Animated.Value(startY)).current;
+  const opacity = useRef(new Animated.Value(0.8)).current;
+
+  useEffect(() => {
+    const animateParticle = () => {
+      translateX.setValue(startX);
+      translateY.setValue(startY);
+      opacity.setValue(0.8);
+
+      const randomX = startX + (Math.random() * 80 - 40);
+      const randomY = startY + (Math.random() * 80 - 40);
+
+      const moveX = Animated.timing(translateX, {
+        toValue: randomX,
+        duration: duration,
+        useNativeDriver: true,
+        delay: delay,
+      });
+
+      const moveY = Animated.timing(translateY, {
+        toValue: randomY,
+        duration: duration,
+        useNativeDriver: true,
+        delay: delay,
+      });
+
+      const fadeInOut = Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 1.0,
+          duration: duration / 2,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0.8,
+          duration: duration / 2,
+          useNativeDriver: true,
+        }),
+      ]);
+
+      Animated.parallel([moveX, moveY, fadeInOut]).start(() => {
+        setTimeout(() => {
+          animateParticle();
+        }, 500);
+      });
+    };
+
+    const startDelay = setTimeout(() => {
+      animateParticle();
+    }, delay);
+
+    return () => clearTimeout(startDelay);
+  }, []);
+
+  return (
+    <Animated.View
+      style={[
+        styles.particle,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          transform: [{ translateX }, { translateY }],
+          opacity: opacity,
+        },
+      ]}
+    />
+  );
+};
+
+const ParticleBackground = () => {
+  const particles = Array.from({ length: 25 }).map((_, index) => {
+    const size = 4 + Math.random() * 8;
+    const duration = 3000 + Math.random() * 3000;
+    const delay = Math.random() * 1000;
+    const startX = Math.random() * width;
+    const startY = 50 + Math.random() * 250;
+
+    return (
+      <Particle
+        key={index}
+        size={size}
+        duration={duration}
+        delay={delay}
+        startX={startX}
+        startY={startY}
+      />
+    );
+  });
+
+  return <View style={styles.particleContainer}>{particles}</View>;
+};
 
 export default function RegisterScreen() {
   const navigation = useNavigation();
 
+  const [step, setStep] = useState(1);
   const [role, setRole] = useState(null);
   const [fullName, setFullName] = useState('');
   const [studentId, setStudentId] = useState('');
@@ -35,6 +138,12 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
   const [secureText1, setSecureText1] = useState(true);
   const [secureText2, setSecureText2] = useState(true);
+  const [fullNameFocused, setFullNameFocused] = useState(false);
+  const [studentIdFocused, setStudentIdFocused] = useState(false);
+  const [clinicIdFocused, setClinicIdFocused] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+  const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
   
   const [attachedFile, setAttachedFile] = useState(null);
   const [fileModalVisible, setFileModalVisible] = useState(false);
@@ -59,7 +168,7 @@ export default function RegisterScreen() {
   const pickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'], // FIXED: Changed from MediaTypeOptions.Images
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         quality: 0.8,
       });
@@ -137,9 +246,9 @@ export default function RegisterScreen() {
           Alert.alert('Success', 'Verification file uploaded successfully!');
           return 100;
         }
-        return prev + 10;
+        return prev + Math.random() * 30 + 10; // Random increment between 10-40%
       });
-    }, 100);
+    }, 200); // Increased from 100ms to 200ms to reduce flickering
   };
 
   const removeFile = () => {
@@ -180,513 +289,966 @@ export default function RegisterScreen() {
     };
   };
 
-  const handleRegister = async () => {
-    if (!role || !fullName || !email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all required fields');
-      return;
+  const validateStep1 = () => {
+    if (!role) {
+      Alert.alert('Error', 'Please select a role');
+      return false;
     }
-
-    if (role === 'student' && !studentId) {
+    if (!fullName.trim()) {
+      Alert.alert('Error', 'Please enter your full name');
+      return false;
+    }
+    if (role === 'student' && !studentId.trim()) {
       Alert.alert('Error', 'Student ID is required');
-      return;
+      return false;
     }
-
-    if (role === 'doctor' && !clinicId) {
+    if (role === 'doctor' && !clinicId.trim()) {
       Alert.alert('Error', 'Clinic/License ID is required');
-      return;
+      return false;
     }
+    return true;
+  };
 
+  const validateStep2 = () => {
+    if (!email.trim()) {
+      Alert.alert('Error', 'Please enter your email');
+      return false;
+    }
+    if (!password) {
+      Alert.alert('Error', 'Please create a password');
+      return false;
+    }
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters');
+      return false;
+    }
     if (password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match');
-      return;
+      return false;
     }
+    return true;
+  };
 
-    if (role === 'doctor' && !attachedFile) {
-      Alert.alert(
-        'Verification Required',
-        'Doctors are required to upload verification documents. Please attach a file to continue.',
-        [{ text: 'OK' }]
-      );
-      return;
+  const handleNextStep = () => {
+    if (validateStep1()) {
+      setStep(2);
     }
+  };
+
+  const handleBackStep = () => {
+    setStep(1);
+  };
+
+  const handleRegister = async () => {
+    if (!validateStep2()) return;
 
     setLoading(true);
 
     const userData = {
-      role,
       fullName,
-      email,
+      role,
       studentId: role === 'student' ? studentId : null,
       clinicId: role === 'doctor' ? clinicId : null,
-      hasVerificationFile: !!attachedFile,
-      verificationFileName: attachedFile?.name,
     };
 
-    console.log('Registration data:', userData);
+    console.log('Starting registration...', { email, userData });
 
-    setTimeout(() => {
-      setLoading(false);
+    // Register WITH file info (no upload)
+    const result = await authService.register(email, password, userData, attachedFile);
+
+    setLoading(false);
+
+    if (result.success) {
       Alert.alert(
-        'Success',
-        attachedFile 
-          ? 'Account created! Your verification is under review (24-48 hours).'
-          : 'Account created successfully!',
+        '✅ Success!',
+        'Account created successfully!' + 
+        (attachedFile ? '\n\nVerification document recorded.' : ''),
         [{
           text: 'OK',
           onPress: () => {
+            // Navigate based on role
             if (role === 'doctor') {
-              navigation.navigate('ClinicMain'); // FIXED: Changed from 'ClinicDashboard'
+              navigation.navigate('ClinicMain');
             } else {
               navigation.navigate('StudentDashboard');
             }
           },
         }]
       );
-    }, 1500);
+    } else {
+      Alert.alert('❌ Registration Failed', result.error || 'Please try again');
+    }
   };
 
   const fileInfo = getFileInfo();
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
-
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
+      
+      {/* Decorative Background Elements */}
+      <View style={styles.topCircle} />
+      <View style={styles.bottomCircle} />
+      
+      {/* Particle Background */}
+      <ParticleBackground />
+      
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="none"
         >
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.logoContainer}>
-              <Image
-                source={require('../../assets/qora_logo.png')}
-                style={styles.logo}
-                resizeMode="contain"
-              />
-              <Text style={styles.tagline}>
-                Healthcare access with clarity and dignity
-              </Text>
-            </View>
-
-            <View style={styles.card}>
-              <Text style={styles.title}>Create Account</Text>
-              <Text style={styles.subtitle}>Join QORA in a few simple steps</Text>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Register As</Text>
-                <View style={styles.roleContainer}>
-                  <TouchableOpacity
-                    style={[
-                      styles.roleOption,
-                      role === 'student' && styles.roleSelected,
-                    ]}
-                    onPress={() => setRole('student')}
-                  >
-                    <Ionicons
-                      name="school-outline"
-                      size={22}
-                      color={role === 'student' ? '#2563EB' : '#64748B'}
-                    />
-                    <Text
-                      style={[
-                        styles.roleText,
-                        role === 'student' && styles.roleTextSelected,
-                      ]}
-                    >
-                      Student
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.roleOption,
-                      role === 'doctor' && styles.roleSelected,
-                    ]}
-                    onPress={() => setRole('doctor')}
-                  >
-                    <Ionicons
-                      name="medkit-outline"
-                      size={22}
-                      color={role === 'doctor' ? '#2563EB' : '#64748B'}
-                    />
-                    <Text
-                      style={[
-                        styles.roleText,
-                        role === 'doctor' && styles.roleTextSelected,
-                      ]}
-                    >
-                      Clinic
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Full Name</Text>
-                <View style={styles.inputWrapper}>
-                  <Ionicons name="person-outline" size={20} color="#94A3B8" />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter your full name"
-                    placeholderTextColor="#94A3B8"
-                    value={fullName}
-                    onChangeText={setFullName}
-                  />
-                </View>
-              </View>
-
-              {role === 'student' && (
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Student ID</Text>
-                  <View style={styles.inputWrapper}>
-                    <Ionicons name="card-outline" size={20} color="#94A3B8" />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Enter your student ID"
-                      placeholderTextColor="#94A3B8"
-                      value={studentId}
-                      onChangeText={setStudentId}
-                      keyboardType="numeric"
-                    />
-                  </View>
-                </View>
-              )}
-
-              {role === 'doctor' && (
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Clinic / License ID</Text>
-                  <View style={styles.inputWrapper}>
-                    <Ionicons name="id-card-outline" size={20} color="#94A3B8" />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Enter clinic or license ID"
-                      placeholderTextColor="#94A3B8"
-                      value={clinicId}
-                      onChangeText={setClinicId}
-                    />
-                  </View>
-                </View>
-              )}
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Email Address</Text>
-                <View style={styles.inputWrapper}>
-                  <Ionicons name="mail-outline" size={20} color="#94A3B8" />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter your email"
-                    placeholderTextColor="#94A3B8"
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                  />
-                </View>
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Password</Text>
-                <View style={styles.inputWrapper}>
-                  <Ionicons name="lock-closed-outline" size={20} color="#94A3B8" />
-                  <TextInput
-                    style={[styles.input, { flex: 1 }]}
-                    placeholder="Create a password"
-                    placeholderTextColor="#94A3B8"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={secureText1}
-                  />
-                  <TouchableOpacity onPress={() => setSecureText1(!secureText1)}>
-                    <Ionicons
-                      name={secureText1 ? 'eye-outline' : 'eye-off-outline'}
-                      size={20}
-                      color="#94A3B8"
-                    />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Confirm Password</Text>
-                <View style={styles.inputWrapper}>
-                  <Ionicons name="lock-closed-outline" size={20} color="#94A3B8" />
-                  <TextInput
-                    style={[styles.input, { flex: 1 }]}
-                    placeholder="Repeat password"
-                    placeholderTextColor="#94A3B8"
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    secureTextEntry={secureText2}
-                  />
-                  <TouchableOpacity onPress={() => setSecureText2(!secureText2)}>
-                    <Ionicons
-                      name={secureText2 ? 'eye-outline' : 'eye-off-outline'}
-                      size={20}
-                      color="#94A3B8"
-                    />
-                  </TouchableOpacity>
-                </View>
-
-                {password && confirmPassword && password !== confirmPassword && (
-                  <Text style={styles.errorText}>Passwords do not match</Text>
-                )}
-              </View>
-
-              <View style={styles.inputContainer}>
-                <View style={styles.fileHeader}>
-                  <Text style={styles.label}>
-                    Verification Document {role === 'doctor' && '(Required)'}
-                  </Text>
-                  <Text style={styles.fileInfoText}>
-                    {role === 'doctor' 
-                      ? 'Upload license, ID card, or certificate' 
-                      : 'Optional: Upload student ID for faster verification'}
-                  </Text>
-                </View>
-
-                {!attachedFile ? (
-                  <TouchableOpacity 
-                    style={styles.attachButton}
-                    onPress={handleFilePick}
-                  >
-                    <Ionicons name="attach-outline" size={24} color="#2563EB" />
-                    <Text style={styles.attachButtonText}>
-                      {role === 'doctor' 
-                        ? 'Tap to attach verification file' 
-                        : 'Tap to attach student ID (optional)'}
-                    </Text>
-                    <Ionicons name="chevron-forward-outline" size={20} color="#94A3B8" />
-                  </TouchableOpacity>
-                ) : (
-                  <View style={styles.fileCard}>
-                    <View style={styles.fileInfoContainer}>
-                      <View style={styles.fileIconContainer}>
-                        <Ionicons name="document-attach-outline" size={28} color="#2563EB" />
-                      </View>
-                      <View style={styles.fileDetails}>
-                        <Text style={styles.fileName} numberOfLines={1}>
-                          {fileInfo.name}
-                        </Text>
-                        <Text style={styles.fileMeta}>
-                          {fileInfo.type} • {fileInfo.size}
-                        </Text>
-                        {uploadProgress > 0 && uploadProgress < 100 && (
-                          <View style={styles.progressContainer}>
-                            <View style={styles.progressBar}>
-                              <View 
-                                style={[
-                                  styles.progressFill,
-                                  { width: `${uploadProgress}%` }
-                                ]} 
-                              />
-                            </View>
-                            <Text style={styles.progressText}>{uploadProgress}%</Text>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                    <TouchableOpacity 
-                      style={styles.removeButton}
-                      onPress={removeFile}
-                    >
-                      <Ionicons name="close-circle" size={24} color="#EF4444" />
-                    </TouchableOpacity>
-                  </View>
-                )}
-
-                <Text style={styles.fileHint}>
-                  Supported: JPG, PNG, PDF, DOC (Max 10MB)
-                </Text>
-              </View>
-
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  loading && styles.buttonDisabled,
-                ]}
-                onPress={handleRegister}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="white" />
-                ) : (
-                  <>
-                    <Text style={styles.buttonText}>Create Account</Text>
-                    <Ionicons name="person-add" size={20} color="white" />
-                  </>
-                )}
-              </TouchableOpacity>
-
-              <View style={styles.loginContainer}>
-                <Text style={styles.loginText}>Already have an account?</Text>
-                <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                  <Text style={styles.loginLink}> Sign in here</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={fileModalVisible}
-          onRequestClose={() => setFileModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Choose File Source</Text>
-                <TouchableOpacity onPress={() => setFileModalVisible(false)}>
-                  <Ionicons name="close" size={24} color="#64748B" />
-                </TouchableOpacity>
-              </View>
-
-              <Pressable style={styles.modalOption} onPress={pickImage}>
-                <Ionicons name="images-outline" size={28} color="#2563EB" />
-                <View style={styles.modalOptionText}>
-                  <Text style={styles.modalOptionTitle}>Gallery</Text>
-                  <Text style={styles.modalOptionSubtitle}>Choose from photos</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
-              </Pressable>
-
-              <Pressable style={styles.modalOption} onPress={takePhoto}>
-                <Ionicons name="camera-outline" size={28} color="#2563EB" />
-                <View style={styles.modalOptionText}>
-                  <Text style={styles.modalOptionTitle}>Camera</Text>
-                  <Text style={styles.modalOptionSubtitle}>Take a photo</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
-              </Pressable>
-
-              <Pressable style={styles.modalOption} onPress={pickDocument}>
-                <Ionicons name="document-outline" size={28} color="#2563EB" />
-                <View style={styles.modalOptionText}>
-                  <Text style={styles.modalOptionTitle}>Files</Text>
-                  <Text style={styles.modalOptionSubtitle}>Browse documents</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
-              </Pressable>
-
-              <TouchableOpacity 
-                style={styles.modalCancel}
-                onPress={() => setFileModalVisible(false)}
-              >
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </TouchableOpacity>
+          {/* Header Section */}
+          <View style={styles.header}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => step === 1 ? navigation.goBack() : handleBackStep()}
+            >
+              <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+            <Image
+              source={require('../../assets/qora_logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text style={styles.welcomeTitle}>
+              {step === 1 ? 'Create Account' : 'Account Details'}
+            </Text>
+            <Text style={styles.welcomeSubtitle}>
+              {step === 1 ? 'Step 1: Basic Information' : 'Step 2: Account Security'}
+            </Text>
+            
+            {/* Step Indicator */}
+            <View style={styles.stepIndicator}>
+              <View style={[styles.stepDot, step >= 1 && styles.stepDotActive]} />
+              <View style={styles.stepLine} />
+              <View style={[styles.stepDot, step >= 2 && styles.stepDotActive]} />
             </View>
           </View>
-        </Modal>
-      </View>
-    </TouchableWithoutFeedback>
+
+          {/* Form - Full width with rounded top only */}
+          <View style={styles.formWrapper}>
+            <View style={styles.formCard}>
+              {step === 1 ? (
+                <>
+                  {/* Role Selection */}
+                  <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>I am a</Text>
+                    <View style={styles.roleContainer}>
+                      <TouchableOpacity
+                        style={[styles.roleCard, role === 'student' && styles.roleCardSelected]}
+                        onPress={() => setRole('student')}
+                        activeOpacity={0.8}
+                      >
+                        <View style={[styles.roleIcon, role === 'student' && styles.roleIconSelected]}>
+                          <Ionicons name="school-outline" size={24} color={role === 'student' ? '#3B82F6' : '#6B7280'} />
+                        </View>
+                        <Text style={[styles.roleText, role === 'student' && styles.roleTextSelected]}>
+                          Student
+                        </Text>
+                        <Text style={styles.roleDescription}>
+                          Access healthcare services
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[styles.roleCard, role === 'doctor' && styles.roleCardSelected]}
+                        onPress={() => setRole('doctor')}
+                        activeOpacity={0.8}
+                      >
+                        <View style={[styles.roleIcon, role === 'doctor' && styles.roleIconSelected]}>
+                          <Ionicons name="medkit-outline" size={24} color={role === 'doctor' ? '#3B82F6' : '#6B7280'} />
+                        </View>
+                        <Text style={[styles.roleText, role === 'doctor' && styles.roleTextSelected]}>
+                          Clinic
+                        </Text>
+                        <Text style={styles.roleDescription}>
+                          Provide healthcare services
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Full Name */}
+                  <View style={styles.inputSection}>
+                    <View style={styles.inputLabelRow}>
+                      <Ionicons name="person-outline" size={18} color="#6B7280" />
+                      <Text style={styles.inputLabel}>Full Name</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[
+                        styles.inputFieldTouchable,
+                        fullNameFocused && styles.inputFieldFocused
+                      ]}
+                      activeOpacity={1}
+                    >
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Alther Yecyec"
+                        placeholderTextColor="#9CA3AF"
+                        value={fullName}
+                        onChangeText={setFullName}
+                        onFocus={() => setFullNameFocused(true)}
+                        onBlur={() => setFullNameFocused(false)}
+                      />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Student ID or Clinic ID */}
+                  {role === 'student' && (
+                    <View style={styles.inputSection}>
+                      <View style={styles.inputLabelRow}>
+                        <Ionicons name="card-outline" size={18} color="#6B7280" />
+                        <Text style={styles.inputLabel}>Student ID</Text>
+                      </View>
+                      <TouchableOpacity
+                        style={[
+                          styles.inputFieldTouchable,
+                          studentIdFocused && styles.inputFieldFocused
+                        ]}
+                        activeOpacity={1}
+                      >
+                        <TextInput
+                          style={styles.input}
+                          placeholder="Enter your student ID"
+                          placeholderTextColor="#9CA3AF"
+                          value={studentId}
+                          onChangeText={setStudentId}
+                          keyboardType="numeric"
+                          onFocus={() => setStudentIdFocused(true)}
+                          onBlur={() => setStudentIdFocused(false)}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  {role === 'doctor' && (
+                    <View style={styles.inputSection}>
+                      <View style={styles.inputLabelRow}>
+                        <Ionicons name="business-outline" size={18} color="#6B7280" />
+                        <Text style={styles.inputLabel}>Clinic / License ID</Text>
+                      </View>
+                      <TouchableOpacity
+                        style={[
+                          styles.inputFieldTouchable,
+                          clinicIdFocused && styles.inputFieldFocused
+                        ]}
+                        activeOpacity={1}
+                      >
+                        <TextInput
+                          style={styles.input}
+                          placeholder="Enter your professional ID"
+                          placeholderTextColor="#9CA3AF"
+                          value={clinicId}
+                          onChangeText={setClinicId}
+                          onFocus={() => setClinicIdFocused(true)}
+                          onBlur={() => setClinicIdFocused(false)}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  {/* Next Button */}
+                  <TouchableOpacity
+                    style={[styles.nextButton, (!role || !fullName) && styles.nextButtonDisabled]}
+                    onPress={handleNextStep}
+                    disabled={!role || !fullName}
+                  >
+                    <Text style={styles.nextButtonText}>Continue</Text>
+                    <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  {/* Email */}
+                  <View style={styles.inputSection}>
+                    <View style={styles.inputLabelRow}>
+                      <Ionicons name="mail-outline" size={18} color="#6B7280" />
+                      <Text style={styles.inputLabel}>Email Address</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[
+                        styles.inputFieldTouchable,
+                        emailFocused && styles.inputFieldFocused
+                      ]}
+                      activeOpacity={1}
+                    >
+                      <TextInput
+                        style={styles.input}
+                        placeholder="you@example.com"
+                        placeholderTextColor="#9CA3AF"
+                        value={email}
+                        onChangeText={setEmail}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        onFocus={() => setEmailFocused(true)}
+                        onBlur={() => setEmailFocused(false)}
+                      />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Password */}
+                  <View style={styles.inputSection}>
+                    <View style={styles.inputLabelRow}>
+                      <Ionicons name="lock-closed-outline" size={18} color="#6B7280" />
+                      <Text style={styles.inputLabel}>Create Password</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[
+                        styles.inputFieldTouchable,
+                        passwordFocused && styles.inputFieldFocused
+                      ]}
+                      activeOpacity={1}
+                    >
+                      <View style={styles.passwordInputWrapper}>
+                        <TextInput
+                          style={styles.passwordInput}
+                          placeholder="••••••••"
+                          placeholderTextColor="#9CA3AF"
+                          value={password}
+                          onChangeText={setPassword}
+                          secureTextEntry={secureText1}
+                          autoCapitalize="none"
+                          onFocus={() => setPasswordFocused(true)}
+                          onBlur={() => setPasswordFocused(false)}
+                        />
+                        <TouchableOpacity 
+                          style={styles.eyeButton}
+                          onPress={() => setSecureText1(!secureText1)}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                          <Ionicons
+                            name={secureText1 ? 'eye-outline' : 'eye-off-outline'}
+                            size={20}
+                            color="#6B7280"
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Confirm Password */}
+                  <View style={styles.inputSection}>
+                    <View style={styles.inputLabelRow}>
+                      <Ionicons name="lock-closed-outline" size={18} color="#6B7280" />
+                      <Text style={styles.inputLabel}>Confirm Password</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[
+                        styles.inputFieldTouchable,
+                        confirmPasswordFocused && styles.inputFieldFocused
+                      ]}
+                      activeOpacity={1}
+                    >
+                      <View style={styles.passwordInputWrapper}>
+                        <TextInput
+                          style={styles.passwordInput}
+                          placeholder="••••••••"
+                          placeholderTextColor="#9CA3AF"
+                          value={confirmPassword}
+                          onChangeText={setConfirmPassword}
+                          secureTextEntry={secureText2}
+                          autoCapitalize="none"
+                          onFocus={() => setConfirmPasswordFocused(true)}
+                          onBlur={() => setConfirmPasswordFocused(false)}
+                        />
+                        <TouchableOpacity 
+                          style={styles.eyeButton}
+                          onPress={() => setSecureText2(!secureText2)}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                          <Ionicons
+                            name={secureText2 ? 'eye-outline' : 'eye-off-outline'}
+                            size={20}
+                            color="#6B7280"
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    </TouchableOpacity>
+                    {password && confirmPassword && password !== confirmPassword && (
+                      <View style={styles.errorContainer}>
+                        <Ionicons name="alert-circle" size={14} color="#EF4444" />
+                        <Text style={styles.errorText}>Passwords do not match</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Password Requirements */}
+                  <View style={styles.passwordRequirements}>
+                    <Text style={styles.requirementsTitle}>Password must contain:</Text>
+                    <View style={styles.requirementItem}>
+                      <Ionicons 
+                        name={password.length >= 6 ? "checkmark-circle" : "ellipse-outline"} 
+                        size={14} 
+                        color={password.length >= 6 ? "#10B981" : "#6B7280"} 
+                      />
+                      <Text style={[styles.requirementText, password.length >= 6 && styles.requirementMet]}>
+                        At least 6 characters
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* File Upload */}
+                  <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                      <Text style={styles.sectionTitle}>
+                        Verification Document {role === 'doctor' && '*'}
+                      </Text>
+                      <Text style={styles.sectionSubtitle}>
+                        {role === 'doctor' 
+                          ? 'Upload license, ID card, or certificate' 
+                          : 'Optional: Upload student ID for faster verification'}
+                      </Text>
+                    </View>
+
+                    {!attachedFile ? (
+                      <TouchableOpacity 
+                        style={styles.uploadCard}
+                        onPress={handleFilePick}
+                        activeOpacity={0.8}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <View style={styles.uploadIcon}>
+                          <Ionicons name="cloud-upload-outline" size={32} color="#3B82F6" />
+                        </View>
+                        <Text style={styles.uploadTitle}>
+                          {role === 'doctor' 
+                            ? 'Upload Verification File' 
+                            : 'Upload Student ID (Optional)'}
+                        </Text>
+                        <Text style={styles.uploadSubtitle}>
+                          Drag & drop or tap to browse
+                        </Text>
+                        <Text style={styles.uploadHint}>
+                          Supported: JPG, PNG, PDF, DOC • Max 10MB
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={styles.fileCard}>
+                        <View style={styles.fileHeader}>
+                          <View style={styles.fileIcon}>
+                            <Ionicons name="document-text-outline" size={24} color="#3B82F6" />
+                          </View>
+                          <View style={styles.fileInfo}>
+                            <Text style={styles.fileName} numberOfLines={1}>
+                              {getFileInfo()?.name}
+                            </Text>
+                            <Text style={styles.fileDetails}>
+                              {getFileInfo()?.type} • {getFileInfo()?.size}
+                            </Text>
+                            {uploadProgress > 0 && uploadProgress < 100 && (
+                              <View style={styles.progressContainer}>
+                                <View style={styles.progressBar}>
+                                  <View 
+                                    style={[styles.progressFill, { width: `${uploadProgress}%` }]} 
+                                  />
+                                </View>
+                                <Text style={styles.progressText}>{uploadProgress}%</Text>
+                              </View>
+                            )}
+                          </View>
+                          <TouchableOpacity 
+                            style={styles.removeButton}
+                            onPress={removeFile}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          >
+                            <Ionicons name="close-circle" size={24} color="#EF4444" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Register Buttons */}
+                  <View style={styles.buttonContainer}>
+                    <TouchableOpacity
+                      style={styles.backButtonSecondary}
+                      onPress={handleBackStep}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Ionicons name="arrow-back" size={18} color="#3B82F6" />
+                      <Text style={styles.backButtonText}>Back</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity
+                      style={[styles.registerButton, loading && styles.registerButtonDisabled]}
+                      onPress={handleRegister}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <ActivityIndicator color="#FFFFFF" size="small" />
+                      ) : (
+                        <>
+                          <Text style={styles.registerButtonText}>Create Account</Text>
+                          <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+
+              {/* Login Link */}
+              <View style={styles.loginLinkContainer}>
+                <Text style={styles.loginLinkText}>Already have an account?</Text>
+                <TouchableOpacity 
+                  onPress={() => navigation.navigate('Login')}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Text style={styles.loginLink}> Sign in</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Footer Inside White Form */}
+              <View style={styles.footer}>
+                <Text style={styles.footerText}>© 2024 QORA Healthcare. All rights reserved.</Text>
+                <View style={styles.footerLinks}>
+                  <TouchableOpacity 
+                    onPress={() => Alert.alert('Terms', 'Terms of service')}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Text style={styles.footerLink}>Terms</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.footerSeparator}>•</Text>
+                  <TouchableOpacity 
+                    onPress={() => Alert.alert('Privacy', 'Privacy policy')}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Text style={styles.footerLink}>Privacy</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* File Picker Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={fileModalVisible}
+        onRequestClose={() => setFileModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Source</Text>
+              <TouchableOpacity 
+                onPress={() => setFileModalVisible(false)}
+                style={styles.modalCloseButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            <Pressable style={styles.modalOption} onPress={pickImage}>
+              <View style={[styles.modalOptionIcon, { backgroundColor: '#EFF6FF' }]}>
+                <Ionicons name="images-outline" size={24} color="#3B82F6" />
+              </View>
+              <View style={styles.modalOptionText}>
+                <Text style={styles.modalOptionTitle}>Photo Library</Text>
+                <Text style={styles.modalOptionSubtitle}>Choose from your gallery</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            </Pressable>
+
+            <Pressable style={styles.modalOption} onPress={takePhoto}>
+              <View style={[styles.modalOptionIcon, { backgroundColor: '#F0F9FF' }]}>
+                <Ionicons name="camera-outline" size={24} color="#0EA5E9" />
+              </View>
+              <View style={styles.modalOptionText}>
+                <Text style={styles.modalOptionTitle}>Take Photo</Text>
+                <Text style={styles.modalOptionSubtitle}>Use camera</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            </Pressable>
+
+            <Pressable style={styles.modalOption} onPress={pickDocument}>
+              <View style={[styles.modalOptionIcon, { backgroundColor: '#F5F3FF' }]}>
+                <Ionicons name="document-outline" size={24} color="#8B5CF6" />
+              </View>
+              <View style={styles.modalOptionText}>
+                <Text style={styles.modalOptionTitle}>Browse Files</Text>
+                <Text style={styles.modalOptionSubtitle}>Select from device storage</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            </Pressable>
+
+            <TouchableOpacity 
+              style={styles.modalCancel}
+              onPress={() => setFileModalVisible(false)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F172A' },
-  scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 20, paddingBottom: 40 },
-  logoContainer: { alignItems: 'center', marginBottom: 40, marginTop: 60 },
-  logo: { width: 140, height: 140 },
-  tagline: { color: '#94A3B8', marginTop: 12, textAlign: 'center' },
-  card: { backgroundColor: '#fff', borderRadius: 15, padding: 24, elevation: 5 },
-  title: { fontSize: 28, fontWeight: '700', textAlign: 'center' },
-  subtitle: { textAlign: 'center', color: '#64748B', marginBottom: 24 },
-  inputContainer: { marginBottom: 20 },
-  label: { fontWeight: '600', marginBottom: 8 },
-  inputWrapper: {
+  container: {
+    flex: 1,
+    backgroundColor: '#0F172A',
+  },
+  particleContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 350,
+    zIndex: 0,
+    pointerEvents: 'none',
+  },
+  particle: {
+    position: 'absolute',
+  },
+  topCircle: {
+    position: 'absolute',
+    top: -100,
+    right: -100,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    zIndex: 0,
+  },
+  bottomCircle: {
+    position: 'absolute',
+    bottom: -150,
+    left: -100,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: 'rgba(37, 99, 235, 0.05)',
+    zIndex: 0,
+  },
+  keyboardView: {
+    flex: 1,
+    zIndex: 10,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  header: {
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingBottom: 40,
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+    paddingHorizontal: 24,
+    zIndex: 5,
+  },
+  backButton: {
+    position: 'absolute',
+    left: 24,
+    top: 60,
+    padding: 8,
+    zIndex: 6,
+  },
+  logo: {
+    width: 120,
+    height: 120,
+    marginBottom: 16,
+    zIndex: 6,
+  },
+  welcomeTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 8,
+    textAlign: 'center',
+    zIndex: 6,
+  },
+  welcomeSubtitle: {
+    fontSize: 16,
+    color: '#94A3B8',
+    textAlign: 'center',
+    lineHeight: 22,
+    paddingHorizontal: 20,
+    marginBottom: 16,
+    zIndex: 6,
+  },
+  stepIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    gap: 10,
+    marginTop: 10,
+    zIndex: 6,
   },
-  input: { flex: 1, height: 44 },
-  roleContainer: { flexDirection: 'row', gap: 12 },
-  roleOption: {
+  stepDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#94A3B8',
+  },
+  stepDotActive: {
+    backgroundColor: '#3B82F6',
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  stepLine: {
+    width: 40,
+    height: 2,
+    backgroundColor: '#94A3B8',
+    marginHorizontal: 8,
+  },
+  formWrapper: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 10,
-    paddingVertical: 14,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    marginBottom: 0,
+    overflow: 'hidden',
+    zIndex: 10,
   },
-  roleSelected: { borderColor: '#2563EB', backgroundColor: '#EFF6FF' },
-  roleText: { fontWeight: '600', color: '#64748B' },
-  roleTextSelected: { color: '#2563EB' },
-  errorText: { color: '#EF4444', fontSize: 12, marginTop: 6 },
-  fileHeader: { marginBottom: 12 },
-  fileInfoText: { fontSize: 12, color: '#64748B', marginTop: 2 },
-  attachButton: {
+  formCard: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 40,
+    zIndex: 10,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  sectionSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    lineHeight: 18,
+  },
+  roleContainer: {
     flexDirection: 'row',
+    gap: 16,
+  },
+  roleCard: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 16,
+    padding: 20,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#E2E8F0',
-    borderStyle: 'dashed',
-    borderRadius: 10,
-    padding: 16,
-    backgroundColor: '#F8FAFC',
-    gap: 12,
+    borderColor: 'transparent',
   },
-  attachButtonText: {
-    flex: 1,
-    color: '#2563EB',
+  roleCardSelected: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#3B82F6',
+  },
+  roleIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#E5E7EB',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  roleIconSelected: {
+    backgroundColor: '#DBEAFE',
+  },
+  roleText: {
+    fontSize: 16,
     fontWeight: '600',
+    color: '#374151',
+    marginBottom: 6,
+  },
+  roleTextSelected: {
+    color: '#1E40AF',
+  },
+  roleDescription: {
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  inputSection: {
+    marginBottom: 20,
+  },
+  inputLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
+  },
+  inputLabel: {
     fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  inputFieldTouchable: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    height: 50,
+    justifyContent: 'center',
+  },
+  inputFieldFocused: {
+    borderColor: '#3B82F6',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  input: {
+    fontSize: 16,
+    color: '#1F2937',
+    padding: 0,
+    height: 26,
+    width: '100%',
+  },
+  passwordInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
+  passwordInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#1F2937',
+    padding: 0,
+    height: 26,
+  },
+  eyeButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 6,
+  },
+  errorText: {
+    fontSize: 13,
+    color: '#EF4444',
+  },
+  passwordRequirements: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+  },
+  requirementsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 10,
+  },
+  requirementItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  requirementText: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  requirementMet: {
+    color: '#10B981',
+  },
+  uploadCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    borderStyle: 'dashed',
+  },
+  uploadIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#EFF6FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  uploadTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  uploadSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  uploadHint: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    textAlign: 'center',
   },
   fileCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 16,
+    padding: 20,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 10,
-    padding: 16,
-    backgroundColor: '#F8FAFC',
+    borderColor: '#E5E7EB',
   },
-  fileInfoContainer: {
+  fileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
     gap: 12,
   },
-  fileIconContainer: {
+  fileIcon: {
     width: 48,
     height: 48,
-    borderRadius: 8,
+    borderRadius: 12,
     backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  fileDetails: { flex: 1 },
+  fileInfo: {
+    flex: 1,
+  },
   fileName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1E293B',
+    color: '#1F2937',
     marginBottom: 4,
   },
-  fileMeta: {
+  fileDetails: {
     fontSize: 12,
-    color: '#64748B',
+    color: '#6B7280',
   },
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 10,
     gap: 10,
   },
   progressBar: {
     flex: 1,
     height: 6,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: '#E5E7EB',
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -697,86 +1259,190 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontSize: 12,
-    color: '#64748B',
     fontWeight: '600',
+    color: '#6B7280',
     minWidth: 30,
   },
   removeButton: {
     padding: 4,
   },
-  fileHint: {
-    fontSize: 12,
-    color: '#94A3B8',
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  button: {
-    backgroundColor: '#2563EB',
-    padding: 16,
-    borderRadius: 10,
+  nextButton: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 12,
+    paddingVertical: 16,
     flexDirection: 'row',
     justifyContent: 'center',
+    alignItems: 'center',
     gap: 10,
-    marginTop: 10,
+    marginBottom: 24,
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  buttonDisabled: { backgroundColor: '#94A3B8' },
-  buttonText: { color: '#fff', fontWeight: '600' },
-  loginContainer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
-  loginText: { color: '#64748B' },
-  loginLink: { color: '#2563EB', fontWeight: '600' },
+  nextButtonDisabled: {
+    backgroundColor: '#9CA3AF',
+    shadowOpacity: 0,
+  },
+  nextButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 24,
+  },
+  backButtonSecondary: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    borderWidth: 2,
+    borderColor: '#3B82F6',
+    borderRadius: 12,
+  },
+  backButtonText: {
+    color: '#3B82F6',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  registerButton: {
+    flex: 2,
+    backgroundColor: '#3B82F6',
+    borderRadius: 12,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  registerButtonDisabled: {
+    backgroundColor: '#9CA3AF',
+    shadowOpacity: 0,
+  },
+  registerButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  loginLinkContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 24,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    marginBottom: 32,
+  },
+  loginLinkText: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  loginLink: {
+    fontSize: 14,
+    color: '#3B82F6',
+    fontWeight: '600',
+  },
+  footer: {
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    paddingTop: 20,
+    marginTop: 0,
+  },
+  footerText: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  footerLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  footerLink: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  footerSeparator: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
     paddingBottom: 40,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1E293B',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  modalCloseButton: {
+    padding: 4,
   },
   modalOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 4,
+    paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: '#F3F4F6',
     gap: 16,
+  },
+  modalOptionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalOptionText: {
     flex: 1,
   },
   modalOptionTitle: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#1E293B',
-    marginBottom: 2,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 4,
   },
   modalOptionSubtitle: {
     fontSize: 14,
-    color: '#64748B',
+    color: '#6B7280',
   },
   modalCancel: {
-    marginTop: 20,
-    padding: 16,
+    marginTop: 24,
+    padding: 18,
     alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
   },
   modalCancelText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#EF4444',
+    color: '#374151',
   },
 });

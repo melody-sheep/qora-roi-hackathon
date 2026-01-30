@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 
@@ -23,6 +24,7 @@ export default function ClinicDashboard() {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [doctorName, setDoctorName] = useState(''); // Add state for doctor name
   
   // Today's data
   const today = new Date();
@@ -39,7 +41,6 @@ export default function ClinicDashboard() {
 
   // Mock clinic data
   const clinicData = {
-    doctorName: 'Dr. Maria Santos',
     clinicStatus: 'OPEN',
     todayStats: {
       totalAppointments: 12,
@@ -71,13 +72,35 @@ export default function ClinicDashboard() {
     ],
   };
 
+  // Function to get doctor's name from storage
+  const getDoctorName = async () => {
+    try {
+      const userString = await AsyncStorage.getItem('user');
+      if (userString) {
+        const user = JSON.parse(userString);
+        // Add "Dr." prefix if not already there
+        let name = user.fullName || '';
+        if (name && !name.startsWith('Dr.')) {
+          name = `Dr. ${name}`;
+        }
+        setDoctorName(name);
+      }
+    } catch (error) {
+      console.error('Error getting doctor name:', error);
+      setDoctorName('Doctor'); // Fallback name
+    }
+  };
+
   const loadDashboardData = () => {
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
-      setRefreshing(false);
-    }, 1000);
+    // Get doctor name first
+    getDoctorName().then(() => {
+      // Simulate API call for other data
+      setTimeout(() => {
+        setLoading(false);
+        setRefreshing(false);
+      }, 1000);
+    });
   };
 
   useEffect(() => {
@@ -165,7 +188,9 @@ export default function ClinicDashboard() {
       <Text style={styles.greeting}>Good morning,</Text>
       <TouchableOpacity onPress={handleViewProfile}>
         <View style={styles.doctorNameContainer}>
-          <Text style={styles.doctorName}>{clinicData.doctorName}</Text>
+          <Text style={styles.doctorName}>
+            {doctorName || 'Loading...'}
+          </Text>
           <Ionicons name="chevron-forward" size={16} color="white" style={styles.profileArrow} />
         </View>
       </TouchableOpacity>
