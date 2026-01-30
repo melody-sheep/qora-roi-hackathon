@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 
 const { width } = Dimensions.get('window');
 
@@ -32,7 +33,7 @@ export default function ClinicProfile() {
     specialty: 'General Medicine & Family Practice',
     email: 'dr.maria@metrohealth.com',
     phone: '+63 912 345 6789',
-    address: '123 Medical Plaza, Makati City, Metro Manila',
+    address: 'USTP, Lapasan, CDO',
     clinicHours: {
       monday: { open: '8:00 AM', close: '5:00 PM', closed: false },
       tuesday: { open: '8:00 AM', close: '5:00 PM', closed: false },
@@ -119,6 +120,41 @@ export default function ClinicProfile() {
       : [...editData.services, service];
     
     setEditData({ ...editData, services: updatedServices });
+  };
+
+  const handleImagePick = async (fromCamera) => {
+    try {
+      const permissionResult = fromCamera 
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (permissionResult.granted === false) {
+        Alert.alert('Permission required', 'Permission to access camera or gallery is required!');
+        return;
+      }
+
+      const result = fromCamera
+        ? await ImagePicker.launchCameraAsync({
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+          })
+        : await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+          });
+
+      if (!result.canceled) {
+        const selectedImage = result.assets[0];
+        setEditData({ ...editData, profileImage: selectedImage.uri });
+        setModalVisible(false);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to pick image');
+      console.error('Image pick error:', error);
+    }
   };
 
   const handleClinicHoursToggle = (day) => {
@@ -211,9 +247,8 @@ export default function ClinicProfile() {
         <View style={styles.profileHeader}>
           <View style={styles.avatarContainer}>
             <Image 
-              source={{ uri: clinicProfile.profileImage }} 
-              style={styles.avatar}
-              defaultSource={require('../assets/default-avatar.png')}
+              source={{ uri: editing ? editData.profileImage : clinicProfile.profileImage }} 
+              style={styles.avatar} 
             />
             <TouchableOpacity 
               style={styles.avatarEdit}
@@ -307,7 +342,6 @@ export default function ClinicProfile() {
             {editing ? (
               <>
                 {renderEditField('Address', editData.address, 'address', true)}
-                {renderEditField('Consultation Fee (₱)', editData.consultationFee.toString(), 'consultationFee')}
                 {renderEditField('Established Year', editData.establishedYear.toString(), 'establishedYear')}
                 {renderEditField('Clinic Size', editData.clinicSize, 'clinicSize')}
               </>
@@ -317,11 +351,6 @@ export default function ClinicProfile() {
                   <Ionicons name="location-outline" size={18} color="#64748B" />
                   <Text style={styles.infoLabel}>Address:</Text>
                   <Text style={styles.infoValue}>{clinicProfile.address}</Text>
-                </View>
-                <View style={styles.infoRow}>
-                  <Ionicons name="cash-outline" size={18} color="#64748B" />
-                  <Text style={styles.infoLabel}>Consultation Fee:</Text>
-                  <Text style={styles.infoValue}>₱{clinicProfile.consultationFee}</Text>
                 </View>
                 <View style={styles.infoRow}>
                   <Ionicons name="calendar-outline" size={18} color="#64748B" />
@@ -527,6 +556,43 @@ export default function ClinicProfile() {
           </View>
         </View>
       </Modal>
+
+      {/* MODAL FOR AVATAR UPLOAD */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible && modalType === 'avatar'}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Change Profile Picture</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.modalBody}>
+              <TouchableOpacity 
+                style={styles.imageOption}
+                onPress={() => handleImagePick(true)}
+              >
+                <Ionicons name="camera" size={24} color="#2563EB" />
+                <Text style={styles.imageOptionText}>Take Photo</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.imageOption}
+                onPress={() => handleImagePick(false)}
+              >
+                <Ionicons name="images" size={24} color="#2563EB" />
+                <Text style={styles.imageOptionText}>Choose from Gallery</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -562,7 +628,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingTop: 80,
     paddingBottom: 20,
   },
   backButton: {
@@ -588,9 +654,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
     borderWidth: 4,
     borderColor: '#FFFFFF',
     backgroundColor: '#E2E8F0',
@@ -954,6 +1020,23 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  imageOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  imageOptionText: {
+    marginLeft: 12,
+    fontSize: 16,
+    color: '#1E293B',
+    fontWeight: '500',
   },
   
   // FOOTER

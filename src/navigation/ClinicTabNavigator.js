@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import ClinicDashboard from '../screens/clinic/clinicDashboard';
 import ManageAppointmentsScreen from '../screens/clinic/ManageAppointmentsScreen';
 import SetAvailabilityScreen from '../screens/clinic/SetAvailabilityScreen';
-
+import ClinicProfile from '../screens/clinic/clinicProfile';
 const Tab = createBottomTabNavigator();
 
 const ClinicTabNavigator = () => {
@@ -22,6 +22,8 @@ const ClinicTabNavigator = () => {
             iconName = focused ? 'calendar' : 'calendar-outline';
           } else if (route.name === 'Availability') {
             iconName = focused ? 'time' : 'time-outline';
+          } else if (route.name === 'Profile') {
+            iconName = focused ? 'person' : 'person-outline';
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -56,7 +58,13 @@ const ClinicTabNavigator = () => {
         component={SetAvailabilityScreen}
         options={{ headerShown: false }}
       />
+      <Tab.Screen 
+        name="Profile" 
+        component={ClinicProfile}
+        options={{ headerShown: false }}
+      />
     </Tab.Navigator>
+
   );
 };
 

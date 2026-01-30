@@ -128,6 +128,11 @@ export default function ClinicDashboard() {
     navigation.navigate('Broadcast');
   };
 
+  const handleViewProfile = () => {
+  navigation.navigate('Profile');
+  };
+
+  
   if (loading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
@@ -154,25 +159,30 @@ export default function ClinicDashboard() {
         showsVerticalScrollIndicator={false}
       >
         {/* HEADER SECTION */}
-        <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <View>
-              <Text style={styles.greeting}>Good morning,</Text>
-              <Text style={styles.doctorName}>{clinicData.doctorName}</Text>
-            </View>
-            <View style={styles.clinicStatusIndicator}>
-              <View style={[
-                styles.statusDot, 
-                { backgroundColor: clinicData.clinicStatus === 'OPEN' ? '#10B981' : '#EF4444' }
-              ]} />
-              <Text style={styles.clinicStatusText}>
-                {clinicData.clinicStatus}
-              </Text>
-            </View>
-          </View>
-          <Text style={styles.dateTime}>{formattedDate}</Text>
-          <Text style={styles.currentTime}>Current time: {currentTime}</Text>
+<View style={styles.header}>
+  <View style={styles.headerTop}>
+    <View>
+      <Text style={styles.greeting}>Good morning,</Text>
+      <TouchableOpacity onPress={handleViewProfile}>
+        <View style={styles.doctorNameContainer}>
+          <Text style={styles.doctorName}>{clinicData.doctorName}</Text>
+          <Ionicons name="chevron-forward" size={16} color="white" style={styles.profileArrow} />
         </View>
+      </TouchableOpacity>
+    </View>
+    <View style={styles.clinicStatusIndicator}>
+      <View style={[
+        styles.statusDot, 
+        { backgroundColor: clinicData.clinicStatus === 'OPEN' ? '#10B981' : '#EF4444' }
+      ]} />
+      <Text style={styles.clinicStatusText}>
+        {clinicData.clinicStatus}
+      </Text>
+    </View>
+  </View>
+  <Text style={styles.dateTime}>{formattedDate}</Text>
+  <Text style={styles.currentTime}>Current time: {currentTime}</Text>
+</View>
 
         {/* TODAY'S OVERVIEW STATS */}
         <View style={styles.section}>
@@ -767,4 +777,12 @@ const styles = StyleSheet.create({
   footer: {
     height: 20,
   },
+  doctorNameContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  },
+  profileArrow: {
+  marginLeft: 6,
+  },
+
 });
