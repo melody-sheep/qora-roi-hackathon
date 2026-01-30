@@ -133,11 +133,11 @@ export default function StudentDashboardScreen() {
   };
 
   const handleBookAppointment = () => {
-    navigation.navigate('StudentBooking');
+    navigation.navigate('Book');
   };
 
   const handleViewAppointments = () => {
-    navigation.navigate('StudentAppointment');
+    navigation.navigate('Appointments');
   };
 
   const handleUploadDocuments = () => {
@@ -287,6 +287,10 @@ export default function StudentDashboardScreen() {
         </View>
 
         {/* QUICK STATS WIDGET */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Today's Overview</Text>
+        </View>
+
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <Text style={styles.statNumber1}>{stats.totalAppointments}</Text>
@@ -411,7 +415,7 @@ export default function StudentDashboardScreen() {
             <View style={styles.appointmentActions}>
               <TouchableOpacity 
                 style={styles.viewButton}
-                onPress={() => navigation.navigate('StudentAppointment', { id: nextAppointment.id })}
+                onPress={() => navigation.navigate('Appointments', { id: nextAppointment.id })}
               >
                 <Text style={styles.viewButtonText}>View Details</Text>
               </TouchableOpacity>
