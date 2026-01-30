@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,10 +11,142 @@ import {
   Alert,
   RefreshControl,
   SafeAreaView,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../../services/supabase';
 import { appointmentService } from '../../utils/appointmentService';
+
+const { width } = Dimensions.get('window');
+
+// Particle Component for animated background
+const Particle = ({ size, duration, delay, startX, startY }) => {
+  const translateX = useRef(new Animated.Value(startX)).current;
+  const translateY = useRef(new Animated.Value(startY)).current;
+  const opacity = useRef(new Animated.Value(0.8)).current; // CHANGED: Increased from 0.3 to 0.8
+
+  useEffect(() => {
+    const animateParticle = () => {
+      // Reset to start position
+      translateX.setValue(startX);
+      translateY.setValue(startY);
+      opacity.setValue(0.8); // CHANGED: Increased from 0.3 to 0.8
+
+      // Create random movement
+      const randomX = startX + (Math.random() * 80 - 40);
+      const randomY = startY + (Math.random() * 80 - 40);
+
+      const moveX = Animated.timing(translateX, {
+        toValue: randomX,
+        duration: duration,
+        useNativeDriver: true,
+        delay: delay,
+      });
+
+      const moveY = Animated.timing(translateY, {
+        toValue: randomY,
+        duration: duration,
+        useNativeDriver: true,
+        delay: delay,
+      });
+
+      const fadeInOut = Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 1.0, // CHANGED: Increased from 0.7 to 1.0 (fully opaque)
+          duration: duration / 2,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0.8, // CHANGED: Increased from 0.3 to 0.8
+          duration: duration / 2,
+          useNativeDriver: true,
+        }),
+      ]);
+
+      Animated.parallel([moveX, moveY, fadeInOut]).start(() => {
+        setTimeout(() => {
+          animateParticle();
+        }, 500);
+      });
+    };
+
+    const startDelay = setTimeout(() => {
+      animateParticle();
+    }, delay);
+
+    return () => clearTimeout(startDelay);
+  }, []);
+
+  return (
+    <Animated.View
+      style={[
+        styles.particle,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: 'rgba(255, 255, 255, 0.9)', // CHANGED: Increased from 0.6 to 0.9
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          transform: [{ translateX }, { translateY }],
+          opacity: opacity,
+        },
+      ]}
+    />
+  );
+};
+
+const ParticleBackground = () => {
+  const particles = Array.from({ length: 25 }).map((_, index) => { // CHANGED: Increased from 20 to 25 particles
+    const size = 4 + Math.random() * 8; // CHANGED: Increased from 3-9px to 4-12px
+    const duration = 3000 + Math.random() * 3000; // CHANGED: Faster movement
+    const delay = Math.random() * 1000; // CHANGED: Shorter delay
+
+    // Scatter particles across the entire header frame, avoiding text areas
+    let startX, startY;
+
+    // Create safe zones avoiding text areas - more scattered distribution
+    const safeZones = [
+      // Top left corner (above greeting, avoiding name area)
+      { x: [20, width * 0.3], y: [20, 50] },
+      // Top right corner (above status area)
+      { x: [width * 0.7, width - 20], y: [20, 50] },
+      // Middle left (below name area)
+      { x: [20, width * 0.35], y: [140, 180] },
+      // Middle right (below status area)
+      { x: [width * 0.65, width - 20], y: [140, 180] },
+      // Center top (between greeting and date)
+      { x: [width * 0.35, width * 0.65], y: [70, 110] },
+      // Bottom left (below date/time)
+      { x: [20, width * 0.4], y: [190, 220] },
+      // Bottom right (below date/time)
+      { x: [width * 0.6, width - 20], y: [190, 220] },
+    ];
+
+    // Randomly select a safe zone
+    const selectedZone = safeZones[Math.floor(Math.random() * safeZones.length)];
+
+    startX = selectedZone.x[0] + Math.random() * (selectedZone.x[1] - selectedZone.x[0]);
+    startY = selectedZone.y[0] + Math.random() * (selectedZone.y[1] - selectedZone.y[0]);
+
+    return (
+      <Particle
+        key={index}
+        size={size}
+        duration={duration}
+        delay={delay}
+        startX={startX}
+        startY={startY}
+      />
+    );
+  });
+
+  return <View style={styles.particleContainer}>{particles}</View>;
+};
 
 export default function StudentDashboardScreen() {
   const navigation = useNavigation();
@@ -22,6 +154,7 @@ export default function StudentDashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState('verified');
   const [nextAppointment, setNextAppointment] = useState(null);
+  const [studentName, setStudentName] = useState('Loading...');
   const [stats, setStats] = useState({
     totalAppointments: 0,
     upcomingAppointments: 0,
@@ -69,15 +202,91 @@ export default function StudentDashboardScreen() {
     },
   ];
 
+  // Function to get logged-in user's display name
+  const getStudentName = async () => {
+    try {
+      // Prefer cached user in AsyncStorage (check both keys used in app)
+      const storedCurrent = await AsyncStorage.getItem('currentUser');
+      const storedUser = await AsyncStorage.getItem('user');
+      if (storedCurrent) {
+        try {
+          const parsed = JSON.parse(storedCurrent);
+          if (parsed.fullName || parsed.full_name || parsed.name) {
+            setStudentName(parsed.fullName || parsed.full_name || parsed.name);
+            return;
+          }
+        } catch (e) {
+          // ignore parse errors and continue
+        }
+      }
+      if (storedUser) {
+        try {
+          const parsed = JSON.parse(storedUser);
+          if (parsed.full_name || parsed.name) {
+            setStudentName(parsed.full_name || parsed.name);
+            return;
+          }
+        } catch (e) {
+          // ignore parse errors and continue
+        }
+      }
+
+      // Get current session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+      }
+
+      if (!session || !session.user) {
+        console.log('No session found');
+        setStudentName('Student');
+        return;
+      }
+
+      // Try to fetch user profile from users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('full_name, email, role')
+        .eq('email', session.user.email)
+        .single();
+
+      let name = null;
+      if (!userError && userData && userData.full_name) {
+        name = userData.full_name;
+      }
+
+      // Fallbacks: session metadata or email local-part
+      if (!name && session.user.user_metadata && session.user.user_metadata.full_name) {
+        name = session.user.user_metadata.full_name;
+      }
+      if (!name && session.user.email) {
+        name = session.user.email.split('@')[0];
+      }
+      if (!name) name = 'Student';
+
+      setStudentName(name);
+
+      // Cache for next time
+      await AsyncStorage.setItem('user', JSON.stringify({ full_name: name, email: session.user.email }));
+
+    } catch (error) {
+      console.error('Error in getStudentName:', error);
+      setStudentName('Student');
+    }
+  };
+
   const loadDashboardData = async () => {
     setLoading(true);
     try {
+      // Get student name first
+      await getStudentName();
+
       // Get real appointments from service
       const appointments = await appointmentService.getAppointments();
-      
+
       // Get booked slots to check availability
       const bookedSlots = await appointmentService.getBookedSlots();
-      
+
       // Calculate stats from real data
       const calculatedStats = calculateRealStats(appointments);
       setStats({
@@ -86,23 +295,23 @@ export default function StudentDashboardScreen() {
         cancellations: calculatedStats.cancelled,
         completionRate: `${calculatedStats.completionRate}`,
       });
-    
+
       // Get next upcoming appointment
       const nextAppt = getNextAppointment(appointments);
       setNextAppointment(nextAppt);
-      
+
       // Calculate real-time availability
       const availableSlots = checkRealTimeAvailability(bookedSlots);
       setAvailability(availableSlots);
-      
+
       // Generate real notifications
       const realNotifications = getRealNotifications(appointments);
       setNotifications(realNotifications);
-      
+
       // Generate recent activity
       const activity = getRecentActivity(appointments);
       setRecentActivity(activity);
-      
+
     } catch (error) {
       console.error('Error loading dashboard data:', error);
       Alert.alert('Error', 'Failed to load dashboard data');
@@ -404,10 +613,13 @@ export default function StudentDashboardScreen() {
       >
         {/* HEADER SECTION */}
         <View style={styles.header}>
+          {/* Particle Background */}
+          <ParticleBackground />
+
           <View style={styles.headerContent}>
             <View>
               <Text style={styles.greeting}>Welcome back,</Text>
-              <Text style={styles.studentName}>{mockUserData.studentName}</Text>
+              <Text style={styles.studentName}>{studentName}</Text>
               <Text style={styles.studentId}>ID: {mockUserData.studentId}</Text>
             </View>
             <View style={styles.headerRight}>
@@ -438,49 +650,69 @@ export default function StudentDashboardScreen() {
             <Text style={styles.cardTitle}>Verification Status</Text>
           </View>
           
-          <View style={styles.statusRow}>
-            <View style={styles.statusItem}>
-              <Ionicons 
-                name={getStatusIcon(mockUserData.verification.corStatus)} 
-                size={20} 
-                color={getStatusColor(mockUserData.verification.corStatus)} 
-              />
-              <Text style={styles.statusItemText}>CoR: </Text>
-              <Text style={[
-                styles.statusItemValue,
-                { color: getStatusColor(mockUserData.verification.corStatus) }
-              ]}>
-                {mockUserData.verification.corStatus.toUpperCase()}
-              </Text>
-            </View>
-            
-            <View style={styles.statusItem}>
-              <Ionicons 
-                name={getStatusIcon(mockUserData.verification.schoolIdStatus)} 
-                size={20} 
-                color={getStatusColor(mockUserData.verification.schoolIdStatus)} 
-              />
-              <Text style={styles.statusItemText}>School ID: </Text>
-              <Text style={[
-                styles.statusItemValue,
-                { color: getStatusColor(mockUserData.verification.schoolIdStatus) }
-              ]}>
-                {mockUserData.verification.schoolIdStatus.toUpperCase()}
-              </Text>
+          {/* PRIMARY VERIFICATION STATUS */}
+          <View style={styles.verificationSection}>
+            <Text style={styles.sectionLabel}>Document Verification</Text>
+            <View style={styles.primaryStatusRow}>
+              <View style={styles.primaryStatusItem}>
+                <View style={styles.statusIconContainer}>
+                  <Ionicons
+                    name={getStatusIcon(mockUserData.verification.corStatus)}
+                    size={24}
+                    color={getStatusColor(mockUserData.verification.corStatus)}
+                  />
+                </View>
+                <View style={styles.statusTextContainer}>
+                  <Text style={styles.primaryStatusLabel}>Certificate of Registration</Text>
+                  <Text style={[
+                    styles.primaryStatusValue,
+                    { color: getStatusColor(mockUserData.verification.corStatus) }
+                  ]}>
+                    {mockUserData.verification.corStatus.toUpperCase()}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.primaryStatusItem}>
+                <View style={styles.statusIconContainer}>
+                  <Ionicons
+                    name={getStatusIcon(mockUserData.verification.schoolIdStatus)}
+                    size={24}
+                    color={getStatusColor(mockUserData.verification.schoolIdStatus)}
+                  />
+                </View>
+                <View style={styles.statusTextContainer}>
+                  <Text style={styles.primaryStatusLabel}>School ID</Text>
+                  <Text style={[
+                    styles.primaryStatusValue,
+                    { color: getStatusColor(mockUserData.verification.schoolIdStatus) }
+                  ]}>
+                    {mockUserData.verification.schoolIdStatus.toUpperCase()}
+                  </Text>
+                </View>
+              </View>
             </View>
           </View>
-          
-          <View style={styles.statusRow}>
-            <View style={styles.statusItem}>
-              <Ionicons name="school-outline" size={20} color="#6B7280" />
-              <Text style={styles.statusItemText}>Year Level: </Text>
-              <Text style={styles.statusItemValue}>{mockUserData.yearLevel}</Text>
-            </View>
-            
-            <View style={styles.statusItem}>
-              <Ionicons name="time-outline" size={20} color="#6B7280" />
-              <Text style={styles.statusItemText}>Updated: </Text>
-              <Text style={styles.statusItemValue}>Today</Text>
+
+          {/* SECONDARY INFORMATION */}
+          <View style={styles.secondarySection}>
+            <Text style={styles.sectionLabel}>Student Information</Text>
+            <View style={styles.secondaryInfoRow}>
+              <View style={styles.secondaryInfoItem}>
+                <Ionicons name="school-outline" size={18} color="#6B7280" />
+                <View style={styles.secondaryTextContainer}>
+                  <Text style={styles.secondaryInfoLabel}>Year Level</Text>
+                  <Text style={styles.secondaryInfoValue}>{mockUserData.yearLevel}</Text>
+                </View>
+              </View>
+
+              <View style={styles.secondaryInfoItem}>
+                <Ionicons name="time-outline" size={18} color="#6B7280" />
+                <View style={styles.secondaryTextContainer}>
+                  <Text style={styles.secondaryInfoLabel}>Last Updated</Text>
+                  <Text style={styles.secondaryInfoValue}>Today</Text>
+                </View>
+              </View>
             </View>
           </View>
           
@@ -893,7 +1125,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 20,
     marginHorizontal: 20,
-    marginTop: -10,
+    marginTop: 20,
     marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -917,12 +1149,14 @@ const styles = StyleSheet.create({
   statusRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 16,
+    paddingHorizontal: 4,
   },
   statusItem: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    justifyContent: 'flex-start',
   },
   statusItemText: {
     color: '#64748B',
@@ -1353,8 +1587,102 @@ const styles = StyleSheet.create({
     minWidth: 168
   },
   
+  // VERIFICATION STATUS HIERARCHY
+  verificationSection: {
+    marginBottom: 24,
+  },
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  primaryStatusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  primaryStatusItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+    padding: 10,
+    borderRadius: 8,
+    marginHorizontal: 2,
+  },
+  statusIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  statusTextContainer: {
+    flex: 1,
+  },
+  primaryStatusLabel: {
+    fontSize: 11,
+    color: '#6B7280',
+    marginBottom: 3,
+    fontWeight: '500',
+    lineHeight: 13,
+  },
+  primaryStatusValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 16,
+  },
+
+  // SECONDARY INFORMATION
+  secondarySection: {
+    marginBottom: 16,
+  },
+  secondaryInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  secondaryInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginHorizontal: 2,
+  },
+  secondaryTextContainer: {
+    marginLeft: 8,
+  },
+  secondaryInfoLabel: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginBottom: 2,
+  },
+  secondaryInfoValue: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '500',
+  },
+
   // FOOTER
   footer: {
     height: 40,
+  },
+  particleContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  particle: {
+    position: 'absolute',
   },
 });

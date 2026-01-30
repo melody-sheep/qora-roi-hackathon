@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Alert,
   RefreshControl,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -18,6 +19,132 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../services/supabase'; // Make sure this import exists
 
 const { width } = Dimensions.get('window');
+
+// Particle Component for animated background
+const Particle = ({ size, duration, delay, startX, startY }) => {
+  const translateX = useRef(new Animated.Value(startX)).current;
+  const translateY = useRef(new Animated.Value(startY)).current;
+  const opacity = useRef(new Animated.Value(0.8)).current; // CHANGED: Increased from 0.3 to 0.8
+
+  useEffect(() => {
+    const animateParticle = () => {
+      // Reset to start position
+      translateX.setValue(startX);
+      translateY.setValue(startY);
+      opacity.setValue(0.8); // CHANGED: Increased from 0.3 to 0.8
+
+      // Create random movement
+      const randomX = startX + (Math.random() * 80 - 40);
+      const randomY = startY + (Math.random() * 80 - 40);
+
+      const moveX = Animated.timing(translateX, {
+        toValue: randomX,
+        duration: duration,
+        useNativeDriver: true,
+        delay: delay,
+      });
+
+      const moveY = Animated.timing(translateY, {
+        toValue: randomY,
+        duration: duration,
+        useNativeDriver: true,
+        delay: delay,
+      });
+
+      const fadeInOut = Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 1.0, // CHANGED: Increased from 0.7 to 1.0 (fully opaque)
+          duration: duration / 2,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0.8, // CHANGED: Increased from 0.3 to 0.8
+          duration: duration / 2,
+          useNativeDriver: true,
+        }),
+      ]);
+
+      Animated.parallel([moveX, moveY, fadeInOut]).start(() => {
+        setTimeout(() => {
+          animateParticle();
+        }, 500);
+      });
+    };
+
+    const startDelay = setTimeout(() => {
+      animateParticle();
+    }, delay);
+
+    return () => clearTimeout(startDelay);
+  }, []);
+
+  return (
+    <Animated.View
+      style={[
+        styles.particle,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: 'rgba(255, 255, 255, 0.9)', // CHANGED: Increased from 0.6 to 0.9
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          transform: [{ translateX }, { translateY }],
+          opacity: opacity,
+        },
+      ]}
+    />
+  );
+};
+
+const ParticleBackground = () => {
+  const particles = Array.from({ length: 25 }).map((_, index) => { // CHANGED: Increased from 20 to 25 particles
+    const size = 4 + Math.random() * 8; // CHANGED: Increased from 3-9px to 4-12px
+    const duration = 3000 + Math.random() * 3000; // CHANGED: Faster movement
+    const delay = Math.random() * 1000; // CHANGED: Shorter delay
+
+    // Scatter particles across the entire header frame, avoiding text areas
+    let startX, startY;
+
+    // Create safe zones avoiding text areas - more scattered distribution
+    const safeZones = [
+      // Top left corner (above greeting, avoiding name area)
+      { x: [20, width * 0.3], y: [20, 50] },
+      // Top right corner (above status area)
+      { x: [width * 0.7, width - 20], y: [20, 50] },
+      // Middle left (below name area)
+      { x: [20, width * 0.35], y: [140, 180] },
+      // Middle right (below status area)
+      { x: [width * 0.65, width - 20], y: [140, 180] },
+      // Center top (between greeting and date)
+      { x: [width * 0.35, width * 0.65], y: [70, 110] },
+      // Bottom left (below date/time)
+      { x: [20, width * 0.4], y: [190, 220] },
+      // Bottom right (below date/time)
+      { x: [width * 0.6, width - 20], y: [190, 220] },
+    ];
+
+    // Randomly select a safe zone
+    const selectedZone = safeZones[Math.floor(Math.random() * safeZones.length)];
+
+    startX = selectedZone.x[0] + Math.random() * (selectedZone.x[1] - selectedZone.x[0]);
+    startY = selectedZone.y[0] + Math.random() * (selectedZone.y[1] - selectedZone.y[0]);
+
+    return (
+      <Particle
+        key={index}
+        size={size}
+        duration={duration}
+        delay={delay}
+        startX={startX}
+        startY={startY}
+      />
+    );
+  });
+
+  return <View style={styles.particleContainer}>{particles}</View>;
+};
 
 export default function ClinicDashboard() {
   const navigation = useNavigation();
@@ -212,6 +339,29 @@ export default function ClinicDashboard() {
     navigation.navigate('Profile');
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: () => {
+            // Add your actual logout logic here
+            console.log('User logged out');
+            // Navigate to login screen
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Login' }],
+            });
+          }
+        },
+      ]
+    );
+  };
+
   
   if (loading && !refreshing) {
     return (
@@ -240,6 +390,9 @@ export default function ClinicDashboard() {
       >
         {/* HEADER SECTION */}
         <View style={styles.header}>
+          {/* Particle Background */}
+          <ParticleBackground />
+
           <View style={styles.headerTop}>
             <View>
               <Text style={styles.greeting}>Good morning,</Text>
@@ -252,14 +405,23 @@ export default function ClinicDashboard() {
                 </View>
               </TouchableOpacity>
             </View>
-            <View style={styles.clinicStatusIndicator}>
-              <View style={[
-                styles.statusDot, 
-                { backgroundColor: clinicData.clinicStatus === 'OPEN' ? '#10B981' : '#EF4444' }
-              ]} />
-              <Text style={styles.clinicStatusText}>
-                {clinicData.clinicStatus}
-              </Text>
+            <View style={styles.headerRight}>
+              <View style={styles.clinicStatusIndicator}>
+                <View style={[
+                  styles.statusDot,
+                  { backgroundColor: clinicData.clinicStatus === 'OPEN' ? '#10B981' : '#EF4444' }
+                ]} />
+                <Text style={styles.clinicStatusText}>
+                  {clinicData.clinicStatus}
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.logoutButton}
+                onPress={handleLogout}
+              >
+                <Ionicons name="log-out-outline" size={20} color="#CBD5E1" />
+              </TouchableOpacity>
             </View>
           </View>
           <Text style={styles.dateTime}>{formattedDate}</Text>
@@ -528,6 +690,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 12,
   },
+  headerRight: {
+    alignItems: 'flex-end',
+  },
   greeting: {
     color: '#94A3B8',
     fontSize: 14,
@@ -566,6 +731,15 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: '600',
+  },
+  logoutButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
   },
 
   // SECTIONS

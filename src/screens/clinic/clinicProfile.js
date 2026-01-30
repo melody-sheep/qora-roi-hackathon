@@ -14,7 +14,8 @@ import {
   Dimensions,
   Switch,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -70,6 +71,7 @@ export default function ClinicProfile() {
   const [editData, setEditData] = useState({});
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState('');
+  const [newService, setNewService] = useState('');
 
   // Load clinic profile data
   const loadClinicProfile = () => {
@@ -247,18 +249,18 @@ export default function ClinicProfile() {
           <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Clinic Profile</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.editButton}
           onPress={editing ? handleSave : handleEdit}
-          disabled={saving}
+          disabled={loading}
         >
-          {saving ? (
+          {loading ? (
             <ActivityIndicator size="small" color="white" />
           ) : (
-            <Ionicons 
-              name={editing ? "checkmark" : "create-outline"} 
-              size={22} 
-              color="white" 
+            <Ionicons
+              name={editing ? "checkmark" : "create-outline"}
+              size={22}
+              color="white"
             />
           )}
         </TouchableOpacity>
@@ -550,20 +552,20 @@ export default function ClinicProfile() {
 
         {editing && (
           <View style={styles.editActions}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.cancelButton}
               onPress={handleCancel}
-              disabled={saving}
+              disabled={loading}
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+
+            <TouchableOpacity
+              style={[styles.saveButton, loading && styles.saveButtonDisabled]}
               onPress={handleSave}
-              disabled={saving}
+              disabled={loading}
             >
-              {saving ? (
+              {loading ? (
                 <ActivityIndicator size="small" color="white" />
               ) : (
                 <Text style={styles.saveButtonText}>Save Changes</Text>

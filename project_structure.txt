@@ -43,6 +43,7 @@ QORA-ROI-HACKATHON/
 │   │   ├── database.js           # Unified database interface (mock/real switch)
 │   │   ├── supabase.js           # Supabase configuration (real DB)
 │   │   └── auth.js               # Authentication services
+│   │   └── clinicService.js         
 │   │
 │   ├── contexts/                 # React Context providers
 │   │   └── DatabaseContext.js    # Provides mock database to all components
@@ -51,6 +52,7 @@ QORA-ROI-HACKATHON/
 │   │   ├── storageHelpers.js     # AsyncStorage helper functions
 │   │   ├── validation.js         # Data validation utilities
 │   │   └── formatters.js         # Date/time/formatter utilities
+│   │   └── appointmentService.js   
 │   │
 │   └── styles/                   # Global styles and themes
 │
