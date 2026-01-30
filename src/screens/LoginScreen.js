@@ -434,13 +434,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     zIndex: 5,
   },
-  logo: {
-    width: 170,
-    height: 170,
-    marginBottom: 10,
-    zIndex: 6,
-    
-  },
+logo: {
+  width: 170,
+  height: 170,
+  marginBottom: 10,
+  zIndex: 6,
+
+},
   welcomeTitle: {
     fontSize: 28,
     fontWeight: '700',
