@@ -14,18 +14,19 @@ import {
   Dimensions,
   Switch,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '../../services/supabase';
-import { authService } from '../../services/auth';
 
 const { width } = Dimensions.get('window');
 
 export default function ClinicProfile() {
   const navigation = useNavigation();
+  
+  // State for user and clinic data
+  const [doctorName, setDoctorName] = useState('Loading...');
+  const [doctorEmail, setDoctorEmail] = useState('');
+  const [clinicId, setClinicId] = useState(null);
   
   // Clinic profile data
   const [clinicProfile, setClinicProfile] = useState({
@@ -64,94 +65,45 @@ export default function ClinicProfile() {
     profileImage: 'https://via.placeholder.com/150',
   });
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState({});
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState('');
-  const [newService, setNewService] = useState('');
 
-  // Load clinic profile from AsyncStorage and fetch name/email from DB
-  const loadClinicProfile = async () => {
-    try {
-      setLoading(true);
-      
-      // 1. Get current user to know which clinic to fetch
-      const currentUser = await authService.getCurrentUser();
-      if (!currentUser) {
-        Alert.alert('Error', 'Please login first');
-        navigation.goBack();
-        return;
-      }
-      
-      // 2. Try to fetch clinic name/email from database (SIMPLIFIED - just name & email)
-      try {
-        const { data: clinicData, error } = await supabase
-          .from('clinics')
-          .select('name, email')
-          .eq('id', currentUser.clinic_id || 123) // Use user's clinic_id or default
-          .maybeSingle();
-        
-        if (!error && clinicData) {
-          // Update name and email from database
-          setClinicProfile(prev => ({
-            ...prev,
-            name: clinicData.name || 'Your Clinic',
-            email: clinicData.email || currentUser.email
-          }));
-        }
-      } catch (dbError) {
-        console.log('Using default clinic name/email');
-      }
-      
-      // 3. Load other profile data from AsyncStorage (local storage)
-      const savedProfile = await AsyncStorage.getItem('clinicProfile');
-      if (savedProfile) {
-        const parsedProfile = JSON.parse(savedProfile);
-        // Keep name/email from DB, everything else from storage
-        setClinicProfile(prev => ({
-          ...parsedProfile,
-          name: prev.name, // Keep DB name
-          email: prev.email // Keep DB email
-        }));
-      }
-      
-    } catch (error) {
-      console.error('Error loading profile:', error);
-    } finally {
+  // Load clinic profile data
+  const loadClinicProfile = () => {
+    setLoading(true);
+    // Simulate API call
+    setTimeout(() => {
       setLoading(false);
-    }
+    }, 500);
   };
 
   useEffect(() => {
     loadClinicProfile();
   }, []);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      loadClinicProfile();
+    }, [])
+  );
+
   const handleEdit = () => {
     setEditData({ ...clinicProfile });
     setEditing(true);
   };
 
-  const handleSave = async () => {
-    try {
-      setSaving(true);
-      
-      // Save to AsyncStorage (local storage)
-      await AsyncStorage.setItem('clinicProfile', JSON.stringify(editData));
-      
-      // Update local state
+  const handleSave = () => {
+    setLoading(true);
+    // Simulate API update
+    setTimeout(() => {
       setClinicProfile(editData);
       setEditing(false);
-      
-      Alert.alert('Success', 'Profile saved locally!');
-      
-    } catch (error) {
-      console.error('Error saving:', error);
-      Alert.alert('Error', 'Failed to save profile');
-    } finally {
-      setSaving(false);
-    }
+      setLoading(false);
+      Alert.alert('Success', 'Profile updated successfully');
+    }, 1000);
   };
 
   const handleCancel = () => {

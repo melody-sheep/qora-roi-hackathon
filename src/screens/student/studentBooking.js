@@ -15,79 +15,191 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Mock doctors data
+const mockDoctors = [
+  {
+    id: '1',
+    name: 'Dr. Maria Santos',
+    specialty: 'Dentist',
+    service: 'dental',
+    rating: 4.8,
+    experience: '8 years',
+    availableSlots: [
+      { id: 's1', date: '2026-01-31', time: '09:00 AM - 09:30 AM', available: true },
+      { id: 's2', date: '2026-01-31', time: '10:00 AM - 10:30 AM', available: true },
+      { id: 's3', date: '2026-01-31', time: '02:00 PM - 02:30 PM', available: false },
+      { id: 's4', date: '2026-02-01', time: '11:00 AM - 11:30 AM', available: true },
+    ],
+    image: 'https://randomuser.me/api/portraits/women/45.jpg',
+  },
+  {
+    id: '2',
+    name: 'Dr. James Wilson',
+    specialty: 'General Physician',
+    service: 'medical',
+    rating: 4.9,
+    experience: '12 years',
+    availableSlots: [
+      { id: 's5', date: '2026-01-31', time: '08:30 AM - 09:00 AM', available: true },
+      { id: 's6', date: '2026-01-31', time: '01:00 PM - 01:30 PM', available: true },
+      { id: 's7', date: '2026-02-01', time: '10:00 AM - 10:30 AM', available: true },
+    ],
+    image: 'https://randomuser.me/api/portraits/men/32.jpg',
+  },
+  {
+    id: '3',
+    name: 'Dr. Sarah Johnson',
+    specialty: 'Pediatric Dentist',
+    service: 'dental',
+    rating: 4.7,
+    experience: '6 years',
+    availableSlots: [
+      { id: 's8', date: '2026-01-31', time: '03:00 PM - 03:30 PM', available: true },
+      { id: 's9', date: '2026-02-01', time: '09:30 AM - 10:00 AM', available: true },
+    ],
+    image: 'https://randomuser.me/api/portraits/women/68.jpg',
+  },
+  {
+    id: '4',
+    name: 'Dr. Robert Chen',
+    specialty: 'Cardiologist',
+    service: 'medical',
+    rating: 4.9,
+    experience: '15 years',
+    availableSlots: [
+      { id: 's10', date: '2026-02-01', time: '02:00 PM - 02:30 PM', available: true },
+      { id: 's11', date: '2026-02-02', time: '11:00 AM - 11:30 AM', available: true },
+    ],
+    image: 'https://randomuser.me/api/portraits/men/54.jpg',
+  },
+];
+
+// AsyncStorage keys
+const APPOINTMENTS_KEY = '@student_appointments';
+const BOOKED_SLOTS_KEY = '@booked_slots';
+
+// Appointment service functions
+const appointmentService = {
+  // Get all appointments
+  async getAppointments() {
+    try {
+      const jsonValue = await AsyncStorage.getItem(APPOINTMENTS_KEY);
+      return jsonValue != null ? JSON.parse(jsonValue) : [];
+    } catch (error) {
+      console.error('Error getting appointments:', error);
+      return [];
+    }
+  },
+
+  // Add a new appointment
+  async addAppointment(appointment) {
+    try {
+      const appointments = await this.getAppointments();
+      const newAppointment = {
+        ...appointment,
+        id: `AP-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        createdAt: new Date().toISOString().split('T')[0],
+        status: 'confirmed',
+        location: appointment.location || 'USTP Medical and Dental Clinic',
+        duration: appointment.duration || '30 minutes',
+        appointmentNumber: `AP-${new Date().getFullYear()}-${String(appointments.length + 1).padStart(3, '0')}`, // Add this
+      };
+      
+      const updatedAppointments = [newAppointment, ...appointments];
+      await AsyncStorage.setItem(APPOINTMENTS_KEY, JSON.stringify(updatedAppointments));
+      
+      await this.addBookedSlot({
+        doctorId: appointment.doctorId,
+        slotId: appointment.slotId,
+        date: appointment.date,
+        time: appointment.time
+      });
+      
+      return newAppointment;
+    } catch (error) {
+      console.error('Error adding appointment:', error);
+      throw error;
+    }
+  },
+
+  // Get booked slots
+  async getBookedSlots() {
+    try {
+      const jsonValue = await AsyncStorage.getItem(BOOKED_SLOTS_KEY);
+      return jsonValue != null ? JSON.parse(jsonValue) : [];
+    } catch (error) {
+      console.error('Error getting booked slots:', error);
+      return [];
+    }
+  },
+
+  // Add a booked slot
+  async addBookedSlot(slot) {
+    try {
+      const bookedSlots = await this.getBookedSlots();
+      const updatedSlots = [...bookedSlots, slot];
+      await AsyncStorage.setItem(BOOKED_SLOTS_KEY, JSON.stringify(updatedSlots));
+      return slot;
+    } catch (error) {
+      console.error('Error adding booked slot:', error);
+      throw error;
+    }
+  },
+
+  // Remove a booked slot
+  async removeBookedSlot(slotId) {
+    try {
+      const bookedSlots = await this.getBookedSlots();
+      const updatedSlots = bookedSlots.filter(slot => slot.slotId !== slotId);
+      await AsyncStorage.setItem(BOOKED_SLOTS_KEY, JSON.stringify(updatedSlots));
+      return true;
+    } catch (error) {
+      console.error('Error removing booked slot:', error);
+      throw error;
+    }
+  },
+
+  // Check if a slot is booked
+  async isSlotBooked(slotId) {
+    try {
+      const bookedSlots = await this.getBookedSlots();
+      return bookedSlots.some(slot => slot.slotId === slotId);
+    } catch (error) {
+      console.error('Error checking slot:', error);
+      return false;
+    }
+  },
+
+  // Clear all data (for testing/reset)
+  async clearAllData() {
+    try {
+      await AsyncStorage.removeItem(APPOINTMENTS_KEY);
+      await AsyncStorage.removeItem(BOOKED_SLOTS_KEY);
+      return true;
+    } catch (error) {
+      console.error('Error clearing data:', error);
+      return false;
+    }
+  }
+};
 
 export default function StudentBooking() {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedService, setSelectedService] = useState('all'); // 'all', 'medical', 'dental'
+  const [selectedService, setSelectedService] = useState('all');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [bookingModalVisible, setBookingModalVisible] = useState(false);
   const [bookingDetails, setBookingDetails] = useState({});
   const [filterModalVisible, setFilterModalVisible] = useState(false);
-
-  // Mock data - replace with API calls
-  const mockDoctors = [
-    {
-      id: '1',
-      name: 'Dr. Maria Santos',
-      specialty: 'Dentist',
-      service: 'dental',
-      rating: 4.8,
-      experience: '8 years',
-      availableSlots: [
-        { id: 's1', date: '2026-01-31', time: '09:00 AM - 09:30 AM', available: true },
-        { id: 's2', date: '2026-01-31', time: '10:00 AM - 10:30 AM', available: true },
-        { id: 's3', date: '2026-01-31', time: '02:00 PM - 02:30 PM', available: false },
-        { id: 's4', date: '2026-02-01', time: '11:00 AM - 11:30 AM', available: true },
-      ],
-      image: 'https://randomuser.me/api/portraits/women/45.jpg',
-    },
-    {
-      id: '2',
-      name: 'Dr. James Wilson',
-      specialty: 'General Physician',
-      service: 'medical',
-      rating: 4.9,
-      experience: '12 years',
-      availableSlots: [
-        { id: 's5', date: '2026-01-31', time: '08:30 AM - 09:00 AM', available: true },
-        { id: 's6', date: '2026-01-31', time: '01:00 PM - 01:30 PM', available: true },
-        { id: 's7', date: '2026-02-01', time: '10:00 AM - 10:30 AM', available: true },
-      ],
-      image: 'https://randomuser.me/api/portraits/men/32.jpg',
-    },
-    {
-      id: '3',
-      name: 'Dr. Sarah Johnson',
-      specialty: 'Pediatric Dentist',
-      service: 'dental',
-      rating: 4.7,
-      experience: '6 years',
-      availableSlots: [
-        { id: 's8', date: '2026-01-31', time: '03:00 PM - 03:30 PM', available: true },
-        { id: 's9', date: '2026-02-01', time: '09:30 AM - 10:00 AM', available: true },
-      ],
-      image: 'https://randomuser.me/api/portraits/women/68.jpg',
-    },
-    {
-      id: '4',
-      name: 'Dr. Robert Chen',
-      specialty: 'Cardiologist',
-      service: 'medical',
-      rating: 4.9,
-      experience: '15 years',
-      availableSlots: [
-        { id: 's10', date: '2026-02-01', time: '02:00 PM - 02:30 PM', available: true },
-        { id: 's11', date: '2026-02-02', time: '11:00 AM - 11:30 AM', available: true },
-      ],
-      image: 'https://randomuser.me/api/portraits/men/54.jpg',
-    },
-  ];
-
+  const [bookedSlots, setBookedSlots] = useState([]);
+  const [appointmentNotes, setAppointmentNotes] = useState('');
+  
   // Dates for selection
   const dates = [
     { id: 'today', label: 'Today', date: new Date() },
@@ -103,22 +215,48 @@ export default function StudentBooking() {
     { id: 'dental', label: 'Dental', icon: 'fitness-outline' },
   ];
 
-  const loadAvailabilityData = () => {
+  const loadAvailabilityData = async () => {
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
-      setRefreshing(false);
-    }, 1000);
+    try {
+      // Get booked slots from AsyncStorage
+      const slots = await appointmentService.getBookedSlots();
+      setBookedSlots(slots);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      Alert.alert('Error', 'Failed to load availability data');
+    } finally {
+      setTimeout(() => {
+        setLoading(false);
+        setRefreshing(false);
+      }, 500);
+    }
   };
 
   useEffect(() => {
     loadAvailabilityData();
   }, []);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      loadAvailabilityData();
+    }, [])
+  );
+
   const onRefresh = () => {
     setRefreshing(true);
     loadAvailabilityData();
+  };
+
+  // Check if a slot is booked
+  const isSlotBooked = (slotId) => {
+    return bookedSlots.some(slot => slot.slotId === slotId);
+  };
+
+  // Get available slots for a doctor (excluding booked ones)
+  const getAvailableSlotsForDoctor = (doctor) => {
+    return doctor.availableSlots.filter(slot => 
+      slot.available && !isSlotBooked(slot.id)
+    );
   };
 
   const handleBookSlot = (doctor, slot) => {
@@ -133,42 +271,58 @@ export default function StudentBooking() {
       slotId: slot.id,
       doctorId: doctor.id,
     });
+    setAppointmentNotes(''); // Reset notes
     setBookingModalVisible(true);
   };
 
-  const confirmBooking = () => {
-    setBookingModalVisible(false);
-    
-    // Show loading
-    Alert.alert(
-      'Booking Confirmation',
-      'Are you sure you want to book this appointment?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Confirm Booking',
-          onPress: () => {
-            // Simulate booking process
-            setTimeout(() => {
-              Alert.alert(
-                '✅ Booking Successful!',
-                `Your appointment with ${bookingDetails.doctorName} has been confirmed for ${bookingDetails.date} at ${bookingDetails.time}`,
-                [
-                  {
-                    text: 'View Appointment',
-                    onPress: () => navigation.navigate('MyAppointmentsScreen'),
-                  },
-                  {
-                    text: 'Book Another',
-                    onPress: () => setBookingModalVisible(false),
-                  },
-                ]
-              );
-            }, 500);
+  const confirmBooking = async () => {
+    try {
+      const appointmentData = {
+        doctorName: bookingDetails.doctorName,
+        doctorSpecialty: bookingDetails.doctorSpecialty,
+        doctorImage: bookingDetails.doctorImage,
+        service: bookingDetails.service,
+        date: bookingDetails.date,
+        time: bookingDetails.time,
+        slotId: bookingDetails.slotId,
+        doctorId: bookingDetails.doctorId,
+        location: 'USTP Medical and Dental Clinic',
+        duration: '30 minutes',
+        notes: appointmentNotes || 'Regular appointment',
+      };
+
+      // Save appointment to AsyncStorage
+      const newAppointment = await appointmentService.addAppointment(appointmentData);
+      
+      setBookingModalVisible(false);
+      setAppointmentNotes('');
+      
+      // Refresh slots to show booked slot as unavailable
+      await loadAvailabilityData();
+      
+      Alert.alert(
+        '✅ Booking Successful!',
+        `Your appointment with ${bookingDetails.doctorName} has been confirmed for ${formatDate(bookingDetails.date)} at ${bookingDetails.time}`,
+        [
+          {
+            text: 'View Appointment',
+            onPress: () => {
+              navigation.navigate('StudentAppointment');
+            },
           },
-        },
-      ]
-    );
+          {
+            text: 'Book Another',
+            onPress: () => {
+              // Do nothing, just close
+            },
+          },
+        ]
+      );
+      
+    } catch (error) {
+      console.error('Booking error:', error);
+      Alert.alert('Error', 'Failed to book appointment. Please try again.');
+    }
   };
 
   const filteredDoctors = selectedService === 'all' 
@@ -188,75 +342,112 @@ export default function StudentBooking() {
     return service === 'medical' ? '#3B82F6' : '#10B981';
   };
 
-  const renderDoctorCard = ({ item: doctor }) => (
-    <View style={styles.doctorCard}>
-      <View style={styles.doctorHeader}>
-        <View style={styles.doctorImageContainer}>
-          <Image 
-            source={{ uri: doctor.image }} 
-            style={styles.doctorImage}
-            defaultSource={require('../../../assets/doctor_placeholder.jpg')}
-          />
-          <View style={[styles.serviceBadge, { backgroundColor: getServiceColor(doctor.service) + '20' }]}>
-            <Ionicons 
-              name={getServiceIcon(doctor.service)} 
-              size={16} 
-              color={getServiceColor(doctor.service)} 
+  const renderDoctorCard = ({ item: doctor }) => {
+    const availableSlots = getAvailableSlotsForDoctor(doctor);
+    const availableSlotsCount = availableSlots.length;
+    
+    return (
+      <View style={styles.doctorCard}>
+        <View style={styles.doctorHeader}>
+          <View style={styles.doctorImageContainer}>
+            <Image 
+              source={{ uri: doctor.image }} 
+              style={styles.doctorImage}
+              defaultSource={require('../../../assets/doctor_placeholder.jpg')}
             />
+            <View style={[styles.serviceBadge, { backgroundColor: getServiceColor(doctor.service) + '20' }]}>
+              <Ionicons 
+                name={getServiceIcon(doctor.service)} 
+                size={16} 
+                color={getServiceColor(doctor.service)} 
+              />
+            </View>
           </View>
-        </View>
-        
-        <View style={styles.doctorInfo}>
-          <Text style={styles.doctorName}>{doctor.name}</Text>
-          <Text style={styles.doctorSpecialty}>{doctor.specialty}</Text>
           
-          <View style={styles.doctorStats}>
-            <View style={styles.stat}>
-              <Ionicons name="star" size={14} color="#F59E0B" />
-              <Text style={styles.statText}>{doctor.rating}</Text>
+          <View style={styles.doctorInfo}>
+            <Text style={styles.doctorName}>{doctor.name}</Text>
+            <Text style={styles.doctorSpecialty}>{doctor.specialty}</Text>
+            
+            <View style={styles.doctorStats}>
+              <View style={styles.stat}>
+                <Ionicons name="star" size={14} color="#F59E0B" />
+                <Text style={styles.statText}>{doctor.rating}</Text>
+              </View>
+              <View style={styles.stat}>
+                <Ionicons name="briefcase" size={14} color="#6B7280" />
+                <Text style={styles.statText}>{doctor.experience}</Text>
+              </View>
+              <View style={styles.stat}>
+                <Ionicons name="time" size={14} color="#6B7280" />
+                <Text style={styles.statText}>{availableSlotsCount} slots</Text>
+              </View>
             </View>
-            <View style={styles.stat}>
-              <Ionicons name="briefcase" size={14} color="#6B7280" />
-              <Text style={styles.statText}>{doctor.experience}</Text>
-            </View>
-            {/* Patients count removed */}
           </View>
         </View>
-      </View>
 
-      <View style={styles.slotsSection}>
-        <Text style={styles.slotsTitle}>Available Slots</Text>
-        <View style={styles.slotsGrid}>
-          {doctor.availableSlots
-            .filter(slot => slot.available)
-            .slice(0, 3) // Show only 3 slots initially
-            .map((slot) => (
-              <TouchableOpacity
-                key={slot.id}
-                style={styles.slotButton}
-                onPress={() => handleBookSlot(doctor, slot)}
-              >
-                <Text style={styles.slotTime}>{slot.time.split(' - ')[0]}</Text>
-                <Text style={styles.slotDuration}>30 min</Text>
-                <View style={styles.slotBadge}>
-                  <Ionicons name="calendar-outline" size={12} color="#2563EB" />
-                  <Text style={styles.slotDateText}>{formatDate(slot.date)}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
+        <View style={styles.slotsSection}>
+          <Text style={styles.slotsTitle}>Available Slots</Text>
+          
+          {availableSlotsCount === 0 ? (
+            <View style={styles.noSlotsContainer}>
+              <Ionicons name="time-outline" size={24} color="#CBD5E1" />
+              <Text style={styles.noSlotsText}>No available slots</Text>
+            </View>
+          ) : (
+            <>
+              <View style={styles.slotsGrid}>
+                {availableSlots
+                  .slice(0, 3)
+                  .map((slot) => (
+                    <TouchableOpacity
+                      key={slot.id}
+                      style={styles.slotButton}
+                      onPress={() => handleBookSlot(doctor, slot)}
+                    >
+                      <Text style={styles.slotTime}>{slot.time.split(' - ')[0]}</Text>
+                      <Text style={styles.slotDuration}>30 min</Text>
+                      <View style={styles.slotBadge}>
+                        <Ionicons name="calendar-outline" size={12} color="#2563EB" />
+                        <Text style={styles.slotDateText}>{formatDate(slot.date)}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+              </View>
+              
+              {availableSlotsCount > 3 && (
+                <TouchableOpacity style={styles.viewMoreButton}>
+                  <Text style={styles.viewMoreText}>
+                    +{availableSlotsCount - 3} more slots
+                  </Text>
+                  <Ionicons name="chevron-down" size={16} color="#2563EB" />
+                </TouchableOpacity>
+              )}
+            </>
+          )}
         </View>
-        
-        {doctor.availableSlots.filter(slot => slot.available).length > 3 && (
-          <TouchableOpacity style={styles.viewMoreButton}>
-            <Text style={styles.viewMoreText}>
-              +{doctor.availableSlots.filter(slot => slot.available).length - 3} more slots
-            </Text>
-            <Ionicons name="chevron-down" size={16} color="#2563EB" />
-          </TouchableOpacity>
-        )}
       </View>
-    </View>
-  );
+    );
+  };
+
+  // Reset data for testing (long press on title)
+  const resetDataForTesting = async () => {
+    Alert.alert(
+      'Reset Data',
+      'This will clear all appointments and booked slots. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            await appointmentService.clearAllData();
+            loadAvailabilityData();
+            Alert.alert('Success', 'All data has been cleared.');
+          },
+        },
+      ]
+    );
+  };
 
   if (loading) {
     return (
@@ -283,7 +474,9 @@ export default function StudentBooking() {
           >
             <Ionicons name="arrow-back" size={24} color="#1E293B" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Available Doctors</Text>
+          <TouchableOpacity onLongPress={resetDataForTesting} delayLongPress={2000}>
+            <Text style={styles.headerTitle}>Available Doctors</Text>
+          </TouchableOpacity>
           <TouchableOpacity 
             style={styles.filterButton}
             onPress={() => setFilterModalVisible(true)}
@@ -469,6 +662,8 @@ export default function StudentBooking() {
                 placeholderTextColor="#94A3B8"
                 multiline
                 numberOfLines={3}
+                value={appointmentNotes}
+                onChangeText={setAppointmentNotes}
               />
             </View>
 
@@ -492,7 +687,10 @@ export default function StudentBooking() {
             <View style={styles.modalActions}>
               <TouchableOpacity 
                 style={styles.cancelModalButton}
-                onPress={() => setBookingModalVisible(false)}
+                onPress={() => {
+                  setBookingModalVisible(false);
+                  setAppointmentNotes('');
+                }}
               >
                 <Text style={styles.cancelModalText}>Cancel</Text>
               </TouchableOpacity>
@@ -525,7 +723,6 @@ export default function StudentBooking() {
               </TouchableOpacity>
             </View>
 
-            {/* Filter options would go here */}
             <Text style={styles.comingSoonText}>
               Advanced filters coming soon!
             </Text>
@@ -813,22 +1010,19 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   
-  // BOOK BUTTON
-  bookButton: {
-    flexDirection: 'row',
+  // NO SLOTS CONTAINER
+  noSlotsContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#EFF6FF',
-    paddingVertical: 14,
+    padding: 20,
+    backgroundColor: '#F8FAFC',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
+    borderColor: '#E2E8F0',
   },
-  bookButtonText: {
-    color: '#2563EB',
-    fontWeight: '600',
-    fontSize: 15,
-    marginRight: 8,
+  noSlotsText: {
+    marginTop: 8,
+    color: '#94A3B8',
+    fontSize: 14,
   },
   
   // EMPTY STATE

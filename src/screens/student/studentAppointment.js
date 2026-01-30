@@ -11,130 +11,111 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
-  FlatList,
   Modal,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// AsyncStorage keys
+const APPOINTMENTS_KEY = '@student_appointments';
+const BOOKED_SLOTS_KEY = '@booked_slots';
+
+// Appointment service functions
+const appointmentService = {
+  // Get all appointments
+  async getAppointments() {
+    try {
+      const jsonValue = await AsyncStorage.getItem(APPOINTMENTS_KEY);
+      return jsonValue != null ? JSON.parse(jsonValue) : [];
+    } catch (error) {
+      console.error('Error getting appointments:', error);
+      return [];
+    }
+  },
+
+  // Update appointment status
+  async updateAppointmentStatus(appointmentId, status, notes = '') {
+    try {
+      const appointments = await this.getAppointments();
+      const appointmentIndex = appointments.findIndex(apt => apt.id === appointmentId);
+      
+      if (appointmentIndex !== -1) {
+        const updatedAppointment = {
+          ...appointments[appointmentIndex],
+          status,
+          ...(status === 'cancelled' && { 
+            cancelledAt: new Date().toISOString().split('T')[0],
+            notes: notes || appointments[appointmentIndex].notes
+          }),
+          ...(status === 'completed' && { 
+            notes: notes || appointments[appointmentIndex].notes
+          })
+        };
+        
+        appointments[appointmentIndex] = updatedAppointment;
+        await AsyncStorage.setItem(APPOINTMENTS_KEY, JSON.stringify(appointments));
+        
+        // If cancelled, remove from booked slots
+        if (status === 'cancelled') {
+          await this.removeBookedSlot(updatedAppointment.slotId);
+        }
+        
+        return updatedAppointment;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error updating appointment:', error);
+      throw error;
+    }
+  },
+
+  // Remove a booked slot
+  async removeBookedSlot(slotId) {
+    try {
+      const bookedSlots = await this.getBookedSlots();
+      const updatedSlots = bookedSlots.filter(slot => slot.slotId !== slotId);
+      await AsyncStorage.setItem(BOOKED_SLOTS_KEY, JSON.stringify(updatedSlots));
+      return true;
+    } catch (error) {
+      console.error('Error removing booked slot:', error);
+      throw error;
+    }
+  },
+
+  // Get booked slots
+  async getBookedSlots() {
+    try {
+      const jsonValue = await AsyncStorage.getItem(BOOKED_SLOTS_KEY);
+      return jsonValue != null ? JSON.parse(jsonValue) : [];
+    } catch (error) {
+      console.error('Error getting booked slots:', error);
+      return [];
+    }
+  },
+
+  // Clear all data (for testing/reset)
+  async clearAllData() {
+    try {
+      await AsyncStorage.removeItem(APPOINTMENTS_KEY);
+      await AsyncStorage.removeItem(BOOKED_SLOTS_KEY);
+      return true;
+    } catch (error) {
+      console.error('Error clearing data:', error);
+      return false;
+    }
+  }
+};
 
 export default function StudentAppointment() {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState('upcoming'); // 'upcoming', 'past', 'cancelled'
+  const [selectedFilter, setSelectedFilter] = useState('upcoming');
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [detailsModalVisible, setDetailsModalVisible] = useState(false);
-
-  // Mock appointments data
-  const mockAppointments = [
-    {
-      id: '1',
-      doctorName: 'Dr. Maria Santos',
-      doctorSpecialty: 'Dentist',
-      doctorImage: 'https://randomuser.me/api/portraits/women/45.jpg',
-      service: 'Dental Check-up',
-      date: '2026-02-8',
-      time: '02:00 PM - 02:30 PM',
-      status: 'confirmed',
-      location: 'USTP Medical and Dental Clinic',
-      duration: '30 minutes',
-      appointmentNumber: 'AP-2026-001',
-      notes: 'Regular dental cleaning and check-up',
-      createdAt: '2026-01-30',
-    },
-    {
-      id: '2',
-      doctorName: 'Dr. James Wilson',
-      doctorSpecialty: 'General Physician',
-      doctorImage: 'https://randomuser.me/api/portraits/men/32.jpg',
-      service: 'Medical Consultation',
-      date: '2026-01-20',
-      time: '10:00 AM - 10:30 AM',
-      status: 'completed',
-      location: 'USTP Medical and Dental Clinic',
-      duration: '30 minutes',
-      appointmentNumber: 'AP-2026-002',
-      notes: 'Follow-up for cold symptoms',
-      createdAt: '2026-01-18',
-    },
-    {
-      id: '3',
-      doctorName: 'Dr. Sarah Johnson',
-      doctorSpecialty: 'Pediatric Dentist',
-      doctorImage: 'https://randomuser.me/api/portraits/women/68.jpg',
-      service: 'Dental Consultation',
-      date: '2026-01-15',
-      time: '02:00 PM - 02:30 PM',
-      status: 'completed',
-      location: 'USTP Medical and Dental Clinic',
-      duration: '30 minutes',
-      appointmentNumber: 'AP-2026-003',
-      notes: 'Completed successfully',
-      createdAt: '2026-01-14',
-    },
-    {
-      id: '4',
-      doctorName: 'Dr. Robert Chen',
-      doctorSpecialty: 'Cardiologist',
-      doctorImage: 'https://randomuser.me/api/portraits/men/54.jpg',
-      service: 'Cardiology Consultation',
-      date: '2026-01-11',
-      time: '11:00 AM - 11:30 AM',
-      status: 'cancelled',
-      location: 'USTP Medical and Dental Clinic',
-      duration: '30 minutes',
-      appointmentNumber: 'AP-2026-004',
-      notes: 'Cancelled by student',
-      createdAt: '2026-01-9',
-      cancelledAt: '2026-01-18',
-    },
-    {
-      id: '5',
-      doctorName: 'Dr. James Wilson',
-      doctorSpecialty: 'General Physician',
-      doctorImage: 'https://randomuser.me/api/portraits/men/32.jpg',
-      service: 'medical',
-      date: '2026-01-8',
-      time: '11:00 AM - 11:30 AM',
-      status: 'completed',
-      location: 'USTP Medical and Dental Clinic',
-      duration: '30 minutes',
-      appointmentNumber: 'AP-2026-004',
-      notes: 'Completed successfully',
-      createdAt: '2026-01-7',
-    },
-    {
-      id: '6',
-      doctorName: 'Dr. James Wilson',
-      doctorSpecialty: 'General Physician',
-      doctorImage: 'https://randomuser.me/api/portraits/men/32.jpg',
-      service: 'medical',
-      date: '2026-01-5',
-      time: '11:00 AM - 11:30 AM',
-      status: 'completed',
-      location: 'USTP Medical and Dental Clinic',
-      duration: '30 minutes',
-      appointmentNumber: 'AP-2026-004',
-      notes: 'Completed successfully',
-      createdAt: '2026-01-3',
-    },
-    {
-      id: '7',
-      doctorName: 'Dr. Robert Chen',
-      doctorSpecialty: 'Cardiologist',
-      doctorImage: 'https://randomuser.me/api/portraits/men/54.jpg',
-      service: 'Cardiology Consultation',
-      date: '2025-12-15',
-      time: '11:00 AM - 11:30 AM',
-      status: 'completed',
-      location: 'USTP Medical and Dental Clinic',
-      duration: '30 minutes',
-      appointmentNumber: 'AP-2026-004',
-      notes: 'Completed successfully',
-      createdAt: '2025-12-14',
-    },
-  ];
+  const [appointments, setAppointments] = useState([]);
 
   const filters = [
     { id: 'upcoming', label: 'Upcoming', icon: 'calendar-outline' },
@@ -143,13 +124,20 @@ export default function StudentAppointment() {
     { id: 'all', label: 'All', icon: 'list-outline' },
   ];
 
-  const loadAppointments = () => {
+  const loadAppointments = async () => {
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const data = await appointmentService.getAppointments();
+      // Sort by date (newest first)
+      const sortedData = data.sort((a, b) => new Date(b.date) - new Date(a.date));
+      setAppointments(sortedData);
+    } catch (error) {
+      console.error('Error loading appointments:', error);
+      Alert.alert('Error', 'Failed to load appointments');
+    } finally {
       setLoading(false);
       setRefreshing(false);
-    }, 1000);
+    }
   };
 
   useEffect(() => {
@@ -168,13 +156,17 @@ export default function StudentAppointment() {
   };
 
   const filteredAppointments = selectedFilter === 'all' 
-    ? mockAppointments 
-    : mockAppointments.filter(apt => {
+    ? appointments 
+    : appointments.filter(apt => {
+        const appointmentDate = new Date(apt.date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
         if (selectedFilter === 'upcoming') {
-          return apt.status === 'confirmed' && new Date(apt.date) >= new Date();
+          return apt.status === 'confirmed' && appointmentDate >= today;
         }
         if (selectedFilter === 'past') {
-          return apt.status === 'completed' || new Date(apt.date) < new Date();
+          return (apt.status === 'completed' || appointmentDate < today) && apt.status !== 'cancelled';
         }
         if (selectedFilter === 'cancelled') {
           return apt.status === 'cancelled';
@@ -190,6 +182,11 @@ export default function StudentAppointment() {
       day: 'numeric',
       year: 'numeric'
     });
+  };
+
+  const formatTime = (timeString) => {
+    // Extract just the start time
+    return timeString.split(' - ')[0];
   };
 
   const getStatusColor = (status) => {
@@ -223,31 +220,35 @@ export default function StudentAppointment() {
     setCancelModalVisible(true);
   };
 
-  const confirmCancellation = () => {
+  const confirmCancellation = async () => {
     setCancelModalVisible(false);
     
-    Alert.alert(
-      'Cancel Appointment',
-      `Are you sure you want to cancel your appointment with ${selectedAppointment.doctorName}?`,
-      [
-        { text: 'No, Keep It', style: 'cancel' },
-        {
-          text: 'Yes, Cancel',
-          style: 'destructive',
-          onPress: () => {
-            // Simulate cancellation
-            setTimeout(() => {
-              Alert.alert(
-                'Appointment Cancelled',
-                `Your appointment on ${formatDate(selectedAppointment.date)} has been cancelled.`,
-                [{ text: 'OK' }]
-              );
-              // In real app, update appointment status in backend
-            }, 500);
-          },
-        },
-      ]
-    );
+    try {
+      const updatedAppointment = await appointmentService.updateAppointmentStatus(
+        selectedAppointment.id,
+        'cancelled',
+        'Cancelled by student'
+      );
+      
+      if (updatedAppointment) {
+        // Update local state
+        const updatedAppointments = appointments.map(apt => 
+          apt.id === selectedAppointment.id ? updatedAppointment : apt
+        );
+        setAppointments(updatedAppointments);
+        
+        Alert.alert(
+          'Appointment Cancelled',
+          `Your appointment on ${formatDate(selectedAppointment.date)} has been cancelled.`,
+          [{ 
+            text: 'OK'
+          }]
+        );
+      }
+    } catch (error) {
+      console.error('Cancellation error:', error);
+      Alert.alert('Error', 'Failed to cancel appointment. Please try again.');
+    }
   };
 
   const viewAppointmentDetails = (appointment) => {
@@ -255,7 +256,25 @@ export default function StudentAppointment() {
     setDetailsModalVisible(true);
   };
 
-  const renderAppointmentCard = ({ item: appointment }) => (
+  // Calculate stats dynamically
+  const getStats = () => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    
+    return {
+      upcoming: appointments.filter(a => 
+        a.status === 'confirmed' && new Date(a.date) >= now
+      ).length,
+      past: appointments.filter(a => 
+        (a.status === 'completed' || new Date(a.date) < now) && a.status !== 'cancelled'
+      ).length,
+      cancelled: appointments.filter(a => a.status === 'cancelled').length,
+    };
+  };
+
+  const stats = getStats();
+
+  const renderAppointmentCard = (appointment) => (
     <TouchableOpacity 
       style={styles.appointmentCard}
       onPress={() => viewAppointmentDetails(appointment)}
@@ -265,6 +284,7 @@ export default function StudentAppointment() {
           <Image 
             source={{ uri: appointment.doctorImage }} 
             style={styles.doctorImage}
+            defaultSource={require('../../../assets/doctor_placeholder.jpg')}
           />
           <View style={styles.doctorDetails}>
             <Text style={styles.doctorName}>{appointment.doctorName}</Text>
@@ -287,7 +307,7 @@ export default function StudentAppointment() {
             color={getStatusColor(appointment.status)} 
           />
           <Text style={[styles.statusText, { color: getStatusColor(appointment.status) }]}>
-            {appointment.status.toUpperCase()}
+            {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
           </Text>
         </View>
       </View>
@@ -302,7 +322,7 @@ export default function StudentAppointment() {
           <View style={styles.detailItem}>
             <Ionicons name="time-outline" size={16} color="#64748B" />
             <Text style={styles.detailLabel}>Time: </Text>
-            <Text style={styles.detailValue}>{appointment.time}</Text>
+            <Text style={styles.detailValue}>{formatTime(appointment.time)}</Text>
           </View>
         </View>
         
@@ -310,7 +330,7 @@ export default function StudentAppointment() {
           <View style={styles.detailItem}>
             <Ionicons name="location-outline" size={16} color="#64748B" />
             <Text style={styles.detailLabel}>Location: </Text>
-            <Text style={styles.detailValue} numberOfLines={1}>{appointment.location}</Text>
+            <Text style={styles.detailValue} numberOfLines={1}>{appointment.location || 'USTP Medical and Dental Clinic'}</Text>
           </View>
         </View>
       </View>
@@ -343,6 +363,26 @@ export default function StudentAppointment() {
     </TouchableOpacity>
   );
 
+  // Reset data for testing (long press on title)
+  const resetDataForTesting = async () => {
+    Alert.alert(
+      'Reset Data',
+      'This will clear all appointments and booked slots. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            await appointmentService.clearAllData();
+            loadAppointments();
+            Alert.alert('Success', 'All data has been cleared.');
+          },
+        },
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -368,10 +408,12 @@ export default function StudentAppointment() {
           >
             <Ionicons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>My Appointments</Text>
+          <TouchableOpacity onLongPress={resetDataForTesting} delayLongPress={2000}>
+            <Text style={styles.headerTitle}>My Appointments</Text>
+          </TouchableOpacity>
           <TouchableOpacity 
             style={styles.bookButton}
-            onPress={() => navigation.navigate('StudentBooking')}
+            onPress={() => navigation.navigate('Book')}
           >
             <Ionicons name="add-circle" size={24} color="white" />
           </TouchableOpacity>
@@ -379,21 +421,15 @@ export default function StudentAppointment() {
         
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>
-              {mockAppointments.filter(a => a.status === 'confirmed' && new Date(a.date) >= new Date()).length}
-            </Text>
+            <Text style={styles.statNumber}>{stats.upcoming}</Text>
             <Text style={styles.statLabel}>Upcoming</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>
-              {mockAppointments.filter(a => a.status === 'completed' || new Date(a.date) < new Date()).length}
-            </Text>
+            <Text style={styles.statNumber}>{stats.past}</Text>
             <Text style={styles.statLabel}>Past</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>
-              {mockAppointments.filter(a => a.status === 'cancelled').length}
-            </Text>
+            <Text style={styles.statNumber}>{stats.cancelled}</Text>
             <Text style={styles.statLabel}>Cancelled</Text>
           </View>
         </View>
@@ -462,7 +498,7 @@ export default function StudentAppointment() {
             </Text>
             <TouchableOpacity 
                 style={styles.emptyStateButton}
-                onPress={() => navigation.navigate('StudentBooking')}
+                onPress={() => navigation.navigate('Book')}
             >
                 <Ionicons name="add-circle" size={20} color="white" />
                 <Text style={styles.emptyStateButtonText}>Book Appointment</Text>
@@ -471,176 +507,171 @@ export default function StudentAppointment() {
         ) : (
             filteredAppointments.map((appointment) => (
             <View key={appointment.id} style={styles.appointmentCardWrapper}>
-                {renderAppointmentCard({ item: appointment })}
+                {renderAppointmentCard(appointment)}
             </View>
             ))
         )}
         </ScrollView>
 
-      {/* APPOINTMENT DETAILS MODAL */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={detailsModalVisible}
-        onRequestClose={() => setDetailsModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Appointment Details</Text>
-              <TouchableOpacity onPress={() => setDetailsModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#64748B" />
-              </TouchableOpacity>
-            </View>
+{/* Appointment Details */}
+                {/* APPOINTMENT DETAILS MODAL */}
+                <Modal
+                  animationType="slide"
+                  transparent={true}
+                  visible={detailsModalVisible}
+                  onRequestClose={() => setDetailsModalVisible(false)}
+                >
+                  <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                      <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Appointment Details</Text>
+                        <TouchableOpacity onPress={() => setDetailsModalVisible(false)}>
+                          <Ionicons name="close" size={24} color="#64748B" />
+                        </TouchableOpacity>
+                      </View>
 
-            {selectedAppointment && (
-              <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Doctor Info */}
-                <View style={styles.modalDoctorInfo}>
-                  <Image 
-                    source={{ uri: selectedAppointment.doctorImage }} 
-                    style={styles.modalDoctorImage}
-                  />
-                  <View style={styles.modalDoctorDetails}>
-                    <Text style={styles.modalDoctorName}>{selectedAppointment.doctorName}</Text>
-                    <Text style={styles.modalDoctorSpecialty}>{selectedAppointment.doctorSpecialty}</Text>
-                    <View style={styles.modalServiceBadge}>
-                      <Ionicons 
-                        name={getServiceIcon(selectedAppointment.service)} 
-                        size={16} 
-                        color={getServiceColor(selectedAppointment.service)} 
-                      />
-                      <Text style={styles.modalServiceText}>{selectedAppointment.service}</Text>
-                    </View>
-                  </View>
-                </View>
+                      {/* Doctor Info */}
+                      <View style={styles.modalDoctorInfo}>
+                        <Image 
+                          source={{ uri: selectedAppointment?.doctorImage }} 
+                          style={styles.modalDoctorImage}
+                          defaultSource={require('../../../assets/doctor_placeholder.jpg')}
+                        />
+                        <View style={styles.modalDoctorDetails}>
+                          <Text style={styles.modalDoctorName}>{selectedAppointment?.doctorName}</Text>
+                          <Text style={styles.modalDoctorSpecialty}>{selectedAppointment?.doctorSpecialty}</Text>
+                          <View style={styles.modalServiceBadge}>
+                            <Ionicons 
+                              name={selectedAppointment?.service?.toLowerCase().includes('dental') ? 'fitness-outline' : 'medical-outline'} 
+                              size={16} 
+                              color={selectedAppointment?.service?.toLowerCase().includes('dental') ? '#10B981' : '#3B82F6'} 
+                            />
+                            <Text style={styles.modalServiceText}>{selectedAppointment?.service}</Text>
+                          </View>
+                        </View>
+                      </View>
 
-                {/* Status Banner */}
-                <View style={[styles.statusBanner, { backgroundColor: getStatusColor(selectedAppointment.status) + '20' }]}>
-                  <Ionicons 
-                    name={getStatusIcon(selectedAppointment.status)} 
-                    size={20} 
-                    color={getStatusColor(selectedAppointment.status)} 
-                  />
-                  <Text style={[styles.statusBannerText, { color: getStatusColor(selectedAppointment.status) }]}>
-                    {selectedAppointment.status.toUpperCase()}
-                  </Text>
-                  <Text style={styles.appointmentNumber}>
-                    • {selectedAppointment.appointmentNumber}
-                  </Text>
-                </View>
+                      {/* Status Badge */}
+                      <View style={[styles.statusBadge, { 
+                        backgroundColor: getStatusColor(selectedAppointment?.status) + '20',
+                        marginBottom: 24,
+                        alignSelf: 'flex-start'
+                      }]}>
+                        <Ionicons 
+                          name={getStatusIcon(selectedAppointment?.status)} 
+                          size={16} 
+                          color={getStatusColor(selectedAppointment?.status)} 
+                        />
+                        <Text style={[styles.statusBadgeText, { color: getStatusColor(selectedAppointment?.status) }]}>
+                          {selectedAppointment?.status?.charAt(0).toUpperCase() + selectedAppointment?.status?.slice(1)}
+                          {selectedAppointment?.appointmentNumber && ` • ${selectedAppointment.appointmentNumber}`}
+                        </Text>
+                      </View>
 
-                {/* Appointment Details */}
-                <View style={styles.detailsSection}>
-                  <Text style={styles.sectionTitle}>Appointment Information</Text>
-                  
-                  <View style={styles.detailItemModal}>
-                    <Ionicons name="calendar-outline" size={20} color="#64748B" />
-                    <View style={styles.detailInfo}>
-                      <Text style={styles.detailLabel}>Date</Text>
-                      <Text style={styles.detailValue}>{formatDate(selectedAppointment.date)}</Text>
-                    </View>
-                  </View>
+                      {/* Appointment Details */}
+                      <View style={styles.appointmentDetails}>
+                        <View style={styles.detailRow}>
+                          <Ionicons name="calendar-outline" size={20} color="#64748B" />
+                          <View style={styles.detailInfo}>
+                            <Text style={styles.detailLabel}>Date</Text>
+                            <Text style={styles.detailValue}>{selectedAppointment && formatDate(selectedAppointment.date)}</Text>
+                          </View>
+                        </View>
 
-                  <View style={styles.detailItemModal}>
-                    <Ionicons name="time-outline" size={20} color="#64748B" />
-                    <View style={styles.detailInfo}>
-                      <Text style={styles.detailLabel}>Time Slot</Text>
-                      <Text style={styles.detailValue}>{selectedAppointment.time}</Text>
-                    </View>
-                  </View>
+                        <View style={styles.detailRow}>
+                          <Ionicons name="time-outline" size={20} color="#64748B" />
+                          <View style={styles.detailInfo}>
+                            <Text style={styles.detailLabel}>Time Slot</Text>
+                            <Text style={styles.detailValue}>{selectedAppointment?.time}</Text>
+                          </View>
+                        </View>
 
-                  <View style={styles.detailItemModal}>
-                    <Ionicons name="timer-outline" size={20} color="#64748B" />
-                    <View style={styles.detailInfo}>
-                      <Text style={styles.detailLabel}>Duration</Text>
-                      <Text style={styles.detailValue}>{selectedAppointment.duration}</Text>
-                    </View>
-                  </View>
+                        <View style={styles.detailRow}>
+                          <Ionicons name="timer-outline" size={20} color="#64748B" />
+                          <View style={styles.detailInfo}>
+                            <Text style={styles.detailLabel}>Duration</Text>
+                            <Text style={styles.detailValue}>{selectedAppointment?.duration || '30 minutes'}</Text>
+                          </View>
+                        </View>
 
-                  <View style={styles.detailItemModal}>
-                    <Ionicons name="location-outline" size={20} color="#64748B" />
-                    <View style={styles.detailInfo}>
-                      <Text style={styles.detailLabel}>Location</Text>
-                      <Text style={styles.detailValue}>{selectedAppointment.location}</Text>
-                    </View>
-                  </View>
+                        <View style={styles.detailRow}>
+                          <Ionicons name="location-outline" size={20} color="#64748B" />
+                          <View style={styles.detailInfo}>
+                            <Text style={styles.detailLabel}>Location</Text>
+                            <Text style={styles.detailValue}>{selectedAppointment?.location || 'USTP Medical and Dental Clinic'}</Text>
+                          </View>
+                        </View>
+                      </View>
 
-                  {selectedAppointment.notes && (
-                    <View style={styles.detailItemModal}>
-                      <Ionicons name="document-text-outline" size={20} color="#64748B" />
-                      <View style={styles.detailInfo}>
-                        <Text style={styles.detailLabel}>Notes</Text>
-                        <Text style={styles.detailValue}>{selectedAppointment.notes}</Text>
+                      {/* Additional Notes */}
+                      {selectedAppointment?.notes && selectedAppointment.notes !== 'Regular appointment' && (
+                        <View style={styles.notesSection}>
+                          <Text style={styles.notesLabel}>Additional Notes</Text>
+                          <View style={styles.notesContainer}>
+                            <Text style={styles.notesText}>{selectedAppointment.notes}</Text>
+                          </View>
+                        </View>
+                      )}
+
+                      {/* Booking Info */}
+                      <View style={styles.bookingInfoSection}>
+                        <View style={styles.bookingInfoRow}>
+                          <Ionicons name="calendar-outline" size={16} color="#64748B" />
+                          <Text style={styles.bookingInfoText}>
+                            Booked on: {selectedAppointment && formatDate(selectedAppointment.createdAt)}
+                          </Text>
+                        </View>
+                        {selectedAppointment?.status === 'cancelled' && selectedAppointment?.cancelledAt && (
+                          <View style={styles.bookingInfoRow}>
+                            <Ionicons name="close-circle-outline" size={16} color="#64748B" />
+                            <Text style={styles.bookingInfoText}>
+                              Cancelled on: {formatDate(selectedAppointment.cancelledAt)}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+
+                      {/* Policy Section */}
+                      <View style={styles.policySection}>
+                        <View style={styles.policyItem}>
+                          <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                          <Text style={styles.policyText}>Free for verified students</Text>
+                        </View>
+                        <View style={styles.policyItem}>
+                          <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                          <Text style={styles.policyText}>Cancel up to 24 hours before</Text>
+                        </View>
+                        <View style={styles.policyItem}>
+                          <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                          <Text style={styles.policyText}>Bring your student ID</Text>
+                        </View>
+                      </View>
+
+                      {/* Action Buttons */}
+                      <View style={styles.modalActions}>
+                        <TouchableOpacity 
+                          style={styles.closeModalButton}
+                          onPress={() => setDetailsModalVisible(false)}
+                        >
+                          <Text style={styles.closeModalText}>Close</Text>
+                        </TouchableOpacity>
+                        
+                        {selectedAppointment?.status === 'confirmed' && new Date(selectedAppointment?.date) >= new Date() && (
+                          <TouchableOpacity 
+                            style={styles.cancelModalButton}
+                            onPress={() => {
+                              setDetailsModalVisible(false);
+                              setTimeout(() => handleCancelAppointment(selectedAppointment), 300);
+                            }}
+                          >
+                            <Ionicons name="close-circle" size={20} color="#EF4444" />
+                            <Text style={styles.cancelModalText}>Cancel Appointment</Text>
+                          </TouchableOpacity>
+                        )}
                       </View>
                     </View>
-                  )}
-
-                  <View style={styles.detailItemModal}>
-                    <Ionicons name="calendar-outline" size={20} color="#64748B" />
-                    <View style={styles.detailInfo}>
-                      <Text style={styles.detailLabel}>Booked On</Text>
-                      <Text style={styles.detailValue}>{formatDate(selectedAppointment.createdAt)}</Text>
-                    </View>
                   </View>
-
-                  {selectedAppointment.status === 'cancelled' && selectedAppointment.cancelledAt && (
-                    <View style={styles.detailItemModal}>
-                      <Ionicons name="close-circle-outline" size={20} color="#64748B" />
-                      <View style={styles.detailInfo}>
-                        <Text style={styles.detailLabel}>Cancelled On</Text>
-                        <Text style={styles.detailValue}>{formatDate(selectedAppointment.cancelledAt)}</Text>
-                      </View>
-                    </View>
-                  )}
-                </View>
-
-                {/* Cancellation Policy */}
-                {selectedAppointment.status === 'confirmed' && new Date(selectedAppointment.date) >= new Date() && (
-                  <View style={styles.policySection}>
-                    <Text style={styles.sectionTitle}>Cancellation Policy</Text>
-                    <View style={styles.policyItem}>
-                      <Ionicons name="information-circle" size={16} color="#F59E0B" />
-                      <Text style={styles.policyText}>
-                        You can cancel this appointment up to 24 hours before the scheduled time
-                      </Text>
-                    </View>
-                    <View style={styles.policyItem}>
-                      <Ionicons name="information-circle" size={16} color="#F59E0B" />
-                      <Text style={styles.policyText}>
-                        Late cancellations may affect your ability to book future appointments
-                      </Text>
-                    </View>
-                  </View>
-                )}
-
-                {/* Action Buttons */}
-                <View style={styles.modalActions}>
-                  {selectedAppointment.status === 'confirmed' && new Date(selectedAppointment.date) >= new Date() && (
-                    <TouchableOpacity 
-                      style={styles.cancelModalButton}
-                      onPress={() => {
-                        setDetailsModalVisible(false);
-                        handleCancelAppointment(selectedAppointment);
-                      }}
-                    >
-                      <Ionicons name="close-circle" size={20} color="#EF4444" />
-                      <Text style={styles.cancelModalText}>Cancel Appointment</Text>
-                    </TouchableOpacity>
-                  )}
-                  
-                  <TouchableOpacity 
-                    style={styles.closeModalButton}
-                    onPress={() => setDetailsModalVisible(false)}
-                  >
-                    <Text style={styles.closeModalText}>Close</Text>
-                  </TouchableOpacity>
-                </View>
-              </ScrollView>
-            )}
-          </View>
-        </View>
-      </Modal>
+                </Modal>
 
       {/* CANCEL CONFIRMATION MODAL */}
       <Modal
@@ -662,7 +693,7 @@ export default function StudentAppointment() {
             </Text>
             
             <Text style={styles.confirmModalDetails}>
-              {selectedAppointment && formatDate(selectedAppointment.date)} • {selectedAppointment?.time}
+              {selectedAppointment && formatDate(selectedAppointment.date)} • {selectedAppointment && formatTime(selectedAppointment.time)}
             </Text>
 
             <View style={styles.confirmModalActions}>
@@ -754,10 +785,6 @@ const styles = StyleSheet.create({
   },
   
   // FILTERS
-  filtersScroll: {
-    marginTop: 16,
-    marginBottom: 8,
-  },
   filtersContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -993,6 +1020,9 @@ const styles = StyleSheet.create({
     padding: 24,
     maxHeight: '90%',
   },
+  modalScrollView: {
+    flex: 1,
+  },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1088,6 +1118,16 @@ const styles = StyleSheet.create({
   detailInfo: {
     flex: 1,
     marginLeft: 12,
+  },
+  detailLabel: {
+    fontSize: 12,
+    color: '#64748B',
+    marginBottom: 2,
+  },
+  detailValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1E293B',
   },
   
   // POLICY SECTION
@@ -1218,4 +1258,181 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 15,
   },
+  modalDoctorInfo: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: 20,
+  paddingBottom: 20,
+  borderBottomWidth: 1,
+  borderBottomColor: '#F1F5F9',
+},
+modalDoctorImage: {
+  width: 60,
+  height: 60,
+  borderRadius: 30,
+  marginRight: 16,
+},
+modalDoctorDetails: {
+  flex: 1,
+},
+modalDoctorName: {
+  fontSize: 18,
+  fontWeight: '700',
+  color: '#1E293B',
+  marginBottom: 4,
+},
+modalDoctorSpecialty: {
+  fontSize: 14,
+  color: '#64748B',
+  marginBottom: 8,
+},
+modalServiceBadge: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#EFF6FF',
+  paddingHorizontal: 12,
+  paddingVertical: 6,
+  borderRadius: 16,
+  alignSelf: 'flex-start',
+},
+modalServiceText: {
+  fontSize: 12,
+  color: '#2563EB',
+  fontWeight: '600',
+  marginLeft: 6,
+},
+
+// STATUS BADGE
+statusBadge: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  paddingHorizontal: 12,
+  paddingVertical: 6,
+  borderRadius: 12,
+},
+statusBadgeText: {
+  fontSize: 13,
+  fontWeight: '700',
+  marginLeft: 6,
+},
+
+// APPOINTMENT DETAILS (for modal)
+detailRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: 16,
+},
+detailInfo: {
+  marginLeft: 12,
+  flex: 1,
+},
+detailLabel: {
+  fontSize: 12,
+  color: '#64748B',
+  marginBottom: 2,
+},
+detailValue: {
+  fontSize: 15,
+  fontWeight: '600',
+  color: '#1E293B',
+},
+
+// NOTES SECTION
+notesSection: {
+  marginBottom: 24,
+},
+notesLabel: {
+  fontSize: 14,
+  fontWeight: '600',
+  color: '#1E293B',
+  marginBottom: 8,
+},
+notesContainer: {
+  backgroundColor: '#F8FAFC',
+  borderRadius: 12,
+  padding: 16,
+  borderWidth: 1,
+  borderColor: '#E2E8F0',
+},
+notesText: {
+  fontSize: 14,
+  color: '#1E293B',
+  lineHeight: 20,
+},
+
+// BOOKING INFO SECTION
+bookingInfoSection: {
+  backgroundColor: '#F8FAFC',
+  borderRadius: 12,
+  padding: 16,
+  marginBottom: 24,
+},
+bookingInfoRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: 8,
+},
+bookingInfoText: {
+  fontSize: 13,
+  color: '#64748B',
+  marginLeft: 8,
+  flex: 1,
+},
+
+// POLICY SECTION (copy from studentbooking.js)
+policySection: {
+  backgroundColor: '#F0F9FF',
+  borderRadius: 12,
+  padding: 16,
+  marginBottom: 24,
+},
+policyItem: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: 8,
+},
+policyText: {
+  fontSize: 13,
+  color: '#0C4A6E',
+  marginLeft: 8,
+  flex: 1,
+},
+
+// MODAL ACTIONS
+modalActions: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  gap: 12,
+},
+closeModalButton: {
+  flex: 1,
+  backgroundColor: '#F8FAFC',
+  paddingVertical: 16,
+  borderRadius: 12,
+  alignItems: 'center',
+  borderWidth: 1,
+  borderColor: '#E2E8F0',
+},
+closeModalText: {
+  color: '#64748B',
+  fontWeight: '600',
+  fontSize: 16,
+},
+cancelModalButton: {
+  flex: 2,
+  backgroundColor: '#FEF2F2',
+  paddingVertical: 16,
+  borderRadius: 12,
+  alignItems: 'center',
+  flexDirection: 'row',
+  justifyContent: 'center',
+  borderWidth: 1,
+  borderColor: '#FECACA',
+},
+cancelModalText: {
+  color: '#DC2626',
+  fontWeight: '600',
+  fontSize: 16,
+  marginLeft: 8,
+},
 });
