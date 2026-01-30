@@ -312,7 +312,6 @@ export default function ClinicProfile() {
           <View style={styles.ratingContainer}>
             {renderStars(clinicProfile.rating)}
             <Text style={styles.ratingText}>
-              {clinicProfile.rating} ({clinicProfile.totalReviews} reviews)
             </Text>
           </View>
         </View>
@@ -677,6 +676,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     color: '#64748B',
     fontSize: 14,
+    minWidth: 150
   },
   
   // HEADER
@@ -686,7 +686,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 80,
+    paddingTop: 30,
     paddingBottom: 20,
   },
   backButton: {

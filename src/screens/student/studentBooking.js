@@ -370,10 +370,6 @@ export default function StudentBooking() {
             
             <View style={styles.doctorStats}>
               <View style={styles.stat}>
-                <Ionicons name="star" size={14} color="#F59E0B" />
-                <Text style={styles.statText}>{doctor.rating}</Text>
-              </View>
-              <View style={styles.stat}>
                 <Ionicons name="briefcase" size={14} color="#6B7280" />
                 <Text style={styles.statText}>{doctor.experience}</Text>
               </View>

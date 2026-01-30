@@ -1367,6 +1367,7 @@ const styles = StyleSheet.create({
   loginLinkText: {
     fontSize: 14,
     color: '#6B7280',
+    minWidth:165
   },
   loginLink: {
     fontSize: 14,

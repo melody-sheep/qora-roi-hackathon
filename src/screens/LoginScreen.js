@@ -588,6 +588,7 @@ logo: {
   registerText: {
     fontSize: 14,
     color: '#6B7280',
+    minWidth: 150
   },
   registerLink: {
     fontSize: 14,

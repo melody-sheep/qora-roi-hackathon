@@ -673,6 +673,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     color: '#64748B',
     fontSize: 14,
+    minWidth:180
   },
 
   // HEADER SECTION
