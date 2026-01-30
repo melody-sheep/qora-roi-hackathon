@@ -26,6 +26,8 @@ const AppNavigator = () => {
         <Stack.Screen name="StudentDashboard" component={StudentBottomTabs} />
         <Stack.Screen name="StudentAppointment" component={StudentAppointment} />
         <Stack.Screen name="StudentBooking" component={StudentBooking} />
+
+
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -210,11 +210,6 @@ export default function ClinicProfile() {
         {/* PROFILE HEADER */}
         <View style={styles.profileHeader}>
           <View style={styles.avatarContainer}>
-            <Image 
-              source={{ uri: clinicProfile.profileImage }} 
-              style={styles.avatar}
-              defaultSource={require('../assets/default-avatar.png')}
-            />
             <TouchableOpacity 
               style={styles.avatarEdit}
               onPress={() => openModal('avatar')}

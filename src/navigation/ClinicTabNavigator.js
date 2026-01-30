@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import ClinicDashboard from '../screens/clinic/clinicDashboard';
 import ManageAppointmentsScreen from '../screens/clinic/ManageAppointmentsScreen';
 import SetAvailabilityScreen from '../screens/clinic/SetAvailabilityScreen';
-
+import ClinicProfile from '../screens/clinic/clinicProfile';
 const Tab = createBottomTabNavigator();
 
 const ClinicTabNavigator = () => {
@@ -56,7 +56,13 @@ const ClinicTabNavigator = () => {
         component={SetAvailabilityScreen}
         options={{ headerShown: false }}
       />
+      <Tab.Screen 
+        name="Profile" 
+        component={ClinicProfile}
+        options={{ headerShown: false }}
+      />
     </Tab.Navigator>
+
   );
 };
 
