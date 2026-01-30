@@ -19,7 +19,7 @@ export default function StudentDashboardScreen() {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [verificationStatus, setVerificationStatus] = useState('pending'); // pending, verified, rejected
+  const [verificationStatus, setVerificationStatus] = useState('pending');
   const [nextAppointment, setNextAppointment] = useState(null);
   const [stats, setStats] = useState({
     totalAppointments: 0,
@@ -27,7 +27,6 @@ export default function StudentDashboardScreen() {
     cancellations: 0,
     completionRate: '0%',
   });
-
 
   const mockData = {
     studentName: 'Harry Inidal',
@@ -64,15 +63,10 @@ export default function StudentDashboardScreen() {
     notifications: [
       { id: '1', message: 'Appointment reminder tomorrow', type: 'reminder', read: false },
     ],
-    progress: {
-      completed: 2,
-      total: 4,
-    },
   };
 
   const loadDashboardData = () => {
     setLoading(true);
-    // Simulate API call
     setTimeout(() => {
       setVerificationStatus(mockData.verification.corStatus);
       setNextAppointment(mockData.nextAppointment);
@@ -93,7 +87,6 @@ export default function StudentDashboardScreen() {
 
   useFocusEffect(
     React.useCallback(() => {
-      // Refresh data when screen comes into focus
       loadDashboardData();
     }, [])
   );
@@ -116,6 +109,29 @@ export default function StudentDashboardScreen() {
     }
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Logout', 
+          style: 'destructive',
+          onPress: () => {
+            // Add your actual logout logic here
+            console.log('User logged out');
+            // Navigate to login screen
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Login' }],
+            });
+          }
+        },
+      ]
+    );
+  };
+
   const handleBookAppointment = () => {
     navigation.navigate('StudentBooking');
   };
@@ -130,7 +146,7 @@ export default function StudentDashboardScreen() {
       'You can upload your Certificate of Registration (CoR) for faster verification.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Upload Now', onPress: () => navigation.navigate('DocumentUpload') },
+        { text: 'Upload Now', onPress: () => navigation.navigate('MyDocument') },
       ]
     );
   };
@@ -145,7 +161,6 @@ export default function StudentDashboardScreen() {
           text: 'Yes, Cancel', 
           style: 'destructive',
           onPress: () => {
-            // Handle cancellation
             setNextAppointment(null);
             Alert.alert('Cancelled', 'Your appointment has been cancelled.');
           }
@@ -186,14 +201,23 @@ export default function StudentDashboardScreen() {
               <Text style={styles.studentName}>{mockData.studentName}</Text>
               <Text style={styles.studentId}>ID: {mockData.studentId}</Text>
             </View>
-            <View style={styles.statusIndicator}>
-              <View style={[
-                styles.statusDot, 
-                { backgroundColor: verificationStatus === 'verified' ? '#10B981' : '#F59E0B' }
-              ]} />
-              <Text style={styles.statusText}>
-                {verificationStatus === 'verified' ? 'Verified' : 'Pending'}
-              </Text>
+            <View style={styles.headerRight}>
+              <View style={styles.statusIndicator}>
+                <View style={[
+                  styles.statusDot, 
+                  { backgroundColor: verificationStatus === 'verified' ? '#10B981' : '#F59E0B' }
+                ]} />
+                <Text style={styles.statusText}>
+                  {verificationStatus === 'verified' ? 'Verified' : 'Pending'}
+                </Text>
+              </View>
+              
+              <TouchableOpacity 
+                style={styles.logoutButton}
+                onPress={handleLogout}
+              >
+                <Ionicons name="log-out-outline" size={20} color="#CBD5E1" />
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -274,12 +298,12 @@ export default function StudentDashboardScreen() {
             <Text style={styles.statLabel}>Upcoming</Text>
           </View>
           
-          <View style={styles.statCard}>
+          <View style={[styles.statCard, styles.statCardError]}>
             <Text style={styles.statNumber3}>{stats.cancellations}</Text>
             <Text style={styles.statLabel}>Cancelled</Text>
           </View>
           
-          <View style={styles.statCard}>
+          <View style={[styles.statCard, styles.statCardSuccess]}>
             <Text style={styles.statNumber4}>{stats.completionRate}</Text>
             <Text style={styles.statLabel}>Completed</Text>
           </View>
@@ -469,7 +493,7 @@ export default function StudentDashboardScreen() {
           ))}
         </View>
 
-        {/* RECENT ACTIVITY (Optional - can be hidden if too long) */}
+        {/* RECENT ACTIVITY */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Activity</Text>
           <TouchableOpacity>
@@ -512,7 +536,6 @@ export default function StudentDashboardScreen() {
           </View>
         </View>
 
-        {/* Footer Spacing */}
         <View style={styles.footer} />
       </ScrollView>
     </SafeAreaView>
@@ -538,7 +561,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     color: '#64748B',
     fontSize: 14,
-    minWidth:170
+    minWidth: 170
   },
   
   header: {
@@ -551,9 +574,12 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     flexDirection: 'row',
-    marginTop:30,
+    marginTop: 30,
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+  },
+  headerRight: {
+    alignItems: 'flex-end',
   },
   greeting: {
     color: '#94A3B8',
@@ -577,6 +603,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
+    marginBottom: 12,
   },
   statusDot: {
     width: 8,
@@ -589,8 +616,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  logoutButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   
-  // CARDS
   card: {
     backgroundColor: 'white',
     borderRadius: 12,
@@ -702,7 +736,18 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#64748B',
     textAlign: 'center',
-    minWidth: 100
+    minWidth: 150
+  },
+
+  statCardSuccess: {
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+  },
+  statCardError: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
   },
   
   // SECTIONS
@@ -909,7 +954,7 @@ const styles = StyleSheet.create({
   markAllText: {
     color: '#2563EB',
     fontSize: 14,
-    minWidth:90
+    minWidth: 85
   },
   notificationsCard: {
     backgroundColor: 'white',
@@ -939,65 +984,6 @@ const styles = StyleSheet.create({
   notificationUnread: {
     color: '#1E293B',
     fontWeight: '500',
-  },
-  
-  // PROGRESS
-  progressCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    marginHorizontal: 20,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  progressTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1E293B',
-    flex: 1,
-    marginRight: 16,
-  },
-  progressCount: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#2563EB',
-  },
-  progressBarContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  progressMilestone: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  progressComplete: {
-    backgroundColor: '#2563EB',
-  },
-  progressIncomplete: {
-    backgroundColor: '#E2E8F0',
-  },
-  milestoneNumber: {
-    color: '#64748B',
-    fontWeight: '600',
-  },
-  progressNote: {
-    fontSize: 12,
-    color: '#64748B',
-    textAlign: 'center',
   },
   
   // ACTIVITY
@@ -1050,7 +1036,8 @@ const styles = StyleSheet.create({
   systemStatusText: {
     color: '#64748B',
     fontSize: 12,
-    marginLeft: 6,
+    marginLeft: 3,
+    minWidth: 168
   },
   
   // FOOTER
