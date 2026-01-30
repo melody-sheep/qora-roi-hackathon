@@ -14,21 +14,28 @@ import {
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { appointmentService } from '../../utils/appointmentService';
 
 export default function StudentDashboardScreen() {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [verificationStatus, setVerificationStatus] = useState('pending');
+  const [verificationStatus, setVerificationStatus] = useState('verified');
   const [nextAppointment, setNextAppointment] = useState(null);
   const [stats, setStats] = useState({
     totalAppointments: 0,
     upcomingAppointments: 0,
     cancellations: 0,
-    completionRate: '0%',
+    completionRate: 0,
   });
+  const [availability, setAvailability] = useState({
+    medical: 3,
+    dental: 1,
+  });
+  const [notifications, setNotifications] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
 
-  const mockData = {
+  const mockUserData = {
     studentName: 'Harry Inidal',
     studentId: '2023301940',
     yearLevel: '3rd Year',
@@ -36,44 +43,223 @@ export default function StudentDashboardScreen() {
       corStatus: 'verified',
       schoolIdStatus: 'verified',
     },
-    nextAppointment: {
-      id: '1',
-      service: 'Dental Check-up',
-      doctor: 'Dr. Maria Santos',
-      date: 'Feb 8, 2026',
-      time: '2:00 PM - 2:30 PM',
-      status: 'confirmed',
-    },
-    stats: {
-      totalAppointments: 7,
-      upcomingAppointments: 1,
-      cancellations: 1,
-      completionRate: '5',
-    },
-    recentActivity: [
-      { id: '1', date: 'Feb 8', action: 'Dental appointment booked', type: 'booking' },
-      { id: '2', date: 'Jan 20', action: 'Medical consultation completed', type: 'completed' },
-      { id: '3', date: 'Jan 15', action: 'Medical Consultation Complete', type: 'booking' },
-      { id: '4', date: 'Jan 11', action: 'Booking Cancelled', type: 'cancel' },
-    ],
-    availableSlots: {
-      medical: 3,
-      dental: 1,
-    },
-    notifications: [
-      { id: '1', message: 'Appointment reminder tomorrow', type: 'reminder', read: false },
-    ],
   };
 
-  const loadDashboardData = () => {
+  // Mock doctors data for availability check
+  const mockDoctors = [
+    {
+      id: '1',
+      name: 'Dr. Maria Santos',
+      specialty: 'Dentist',
+      service: 'dental',
+      availableSlots: [
+        { id: 's1', date: '2026-01-31', time: '09:00 AM - 09:30 AM', available: true },
+        { id: 's2', date: '2026-01-31', time: '10:00 AM - 10:30 AM', available: true },
+      ],
+    },
+    {
+      id: '2',
+      name: 'Dr. James Wilson',
+      specialty: 'General Physician',
+      service: 'medical',
+      availableSlots: [
+        { id: 's5', date: '2026-01-31', time: '08:30 AM - 09:00 AM', available: true },
+        { id: 's6', date: '2026-01-31', time: '01:00 PM - 01:30 PM', available: true },
+      ],
+    },
+  ];
+
+  const loadDashboardData = async () => {
     setLoading(true);
-    setTimeout(() => {
-      setVerificationStatus(mockData.verification.corStatus);
-      setNextAppointment(mockData.nextAppointment);
-      setStats(mockData.stats);
+    try {
+      // Get real appointments from service
+      const appointments = await appointmentService.getAppointments();
+      
+      // Get booked slots to check availability
+      const bookedSlots = await appointmentService.getBookedSlots();
+      
+      // Calculate stats from real data
+      const calculatedStats = calculateRealStats(appointments);
+      setStats({
+        totalAppointments: calculatedStats.total,
+        upcomingAppointments: calculatedStats.upcoming,
+        cancellations: calculatedStats.cancelled,
+        completionRate: `${calculatedStats.completionRate}`,
+      });
+    
+      // Get next upcoming appointment
+      const nextAppt = getNextAppointment(appointments);
+      setNextAppointment(nextAppt);
+      
+      // Calculate real-time availability
+      const availableSlots = checkRealTimeAvailability(bookedSlots);
+      setAvailability(availableSlots);
+      
+      // Generate real notifications
+      const realNotifications = getRealNotifications(appointments);
+      setNotifications(realNotifications);
+      
+      // Generate recent activity
+      const activity = getRecentActivity(appointments);
+      setRecentActivity(activity);
+      
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      Alert.alert('Error', 'Failed to load dashboard data');
+    } finally {
       setLoading(false);
       setRefreshing(false);
-    }, 1000);
+    }
+  };
+
+  const calculateRealStats = (appointments) => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    
+    const upcoming = appointments.filter(a => 
+      a.status === 'confirmed' && new Date(a.date) >= now
+    ).length;
+    
+    const past = appointments.filter(a => 
+      (a.status === 'completed' || new Date(a.date) < now) && a.status !== 'cancelled'
+    ).length;
+    
+    const cancelled = appointments.filter(a => a.status === 'cancelled').length;
+    
+    const total = appointments.length;
+    
+    const completionRate = total > 0 ? Math.round((past / total) * 100) : 0;
+    
+    return { upcoming, past, cancelled, total, completionRate };
+  };
+
+  const getNextAppointment = (appointments) => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    
+    const upcomingAppointments = appointments
+      .filter(a => a.status === 'confirmed' && new Date(a.date) >= now)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    return upcomingAppointments[0] || null;
+  };
+
+  const checkRealTimeAvailability = (bookedSlots) => {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    
+    let medicalSlots = 3;
+    let dentalSlots = 1;
+    
+    // Check mock doctors for today's availability
+    mockDoctors.forEach(doctor => {
+      doctor.availableSlots.forEach(slot => {
+        // Only count slots for today that aren't booked
+        if (slot.date === todayStr && slot.available) {
+          const isBooked = bookedSlots.some(booked => booked.slotId === slot.id);
+          if (!isBooked) {
+            if (doctor.service === 'medical') {
+              medicalSlots++;
+            } else if (doctor.service === 'dental') {
+              dentalSlots++;
+            }
+          }
+        }
+      });
+    });
+    
+    return {
+      medical: medicalSlots,
+      dental: dentalSlots,
+    };
+  };
+
+  const getRealNotifications = (appointments) => {
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const notifications = [];
+    
+    // Check for appointments tomorrow
+    const tomorrowAppointments = appointments.filter(a => {
+      if (a.status !== 'confirmed') return false;
+      const appointmentDate = new Date(a.date);
+      return appointmentDate.toDateString() === tomorrow.toDateString();
+    });
+    
+    tomorrowAppointments.forEach(apt => {
+      notifications.push({
+        id: `reminder-${apt.id}`,
+        message: `Reminder: Appointment with ${apt.doctorName} tomorrow`,
+        type: 'reminder',
+        read: false,
+      });
+    });
+    
+    // Add verification notification if pending
+    if (verificationStatus === 'pending') {
+      notifications.push({
+        id: 'verify',
+        message: 'Complete your verification to book appointments',
+        type: 'warning',
+        read: false,
+      });
+    }
+    
+    // If no appointments, suggest booking
+    if (appointments.length === 0) {
+      notifications.push({
+        id: 'welcome',
+        message: 'Welcome! Book your first appointment to get started',
+        type: 'info',
+        read: false,
+      });
+    }
+    
+    return notifications;
+  };
+
+  const getRecentActivity = (appointments) => {
+    // Sort by date (newest first) and take last 4
+    const sortedAppointments = [...appointments]
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 4);
+    
+    return sortedAppointments.map(apt => {
+      let type = 'booking';
+      let action = `${apt.service} booked`;
+      
+      if (apt.status === 'cancelled') {
+        type = 'cancel';
+        action = 'Appointment cancelled';
+      } else if (apt.status === 'completed') {
+        type = 'completed';
+        action = `${apt.service} completed`;
+      }
+      
+      return {
+        id: apt.id,
+        date: formatDate(apt.date).split(',')[0], // Just get month and day
+        action: action,
+        type: type,
+      };
+    });
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Not set';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const formatTime = (timeString) => {
+    if (!timeString) return '';
+    return timeString.split(' - ')[0];
   };
 
   useEffect(() => {
@@ -151,7 +337,7 @@ export default function StudentDashboardScreen() {
     );
   };
 
-  const handleCancelAppointment = (appointmentId) => {
+  const handleCancelAppointment = async (appointmentId) => {
     Alert.alert(
       'Cancel Appointment',
       'Are you sure you want to cancel this appointment?',
@@ -160,13 +346,36 @@ export default function StudentDashboardScreen() {
         { 
           text: 'Yes, Cancel', 
           style: 'destructive',
-          onPress: () => {
-            setNextAppointment(null);
-            Alert.alert('Cancelled', 'Your appointment has been cancelled.');
+          onPress: async () => {
+            try {
+              await appointmentService.updateAppointmentStatus(
+                appointmentId,
+                'cancelled',
+                'Cancelled by student from dashboard'
+              );
+              
+              // Refresh dashboard data
+              loadDashboardData();
+              
+              Alert.alert('Cancelled', 'Your appointment has been cancelled.');
+            } catch (error) {
+              console.error('Cancellation error:', error);
+              Alert.alert('Error', 'Failed to cancel appointment');
+            }
           }
         },
       ]
     );
+  };
+
+  const handleMarkAllNotificationsRead = () => {
+    // In a real app, you would update notification status in your database
+    const updatedNotifications = notifications.map(notification => ({
+      ...notification,
+      read: true
+    }));
+    setNotifications(updatedNotifications);
+    Alert.alert('Success', 'All notifications marked as read');
   };
 
   if (loading) {
@@ -198,8 +407,8 @@ export default function StudentDashboardScreen() {
           <View style={styles.headerContent}>
             <View>
               <Text style={styles.greeting}>Welcome back,</Text>
-              <Text style={styles.studentName}>{mockData.studentName}</Text>
-              <Text style={styles.studentId}>ID: {mockData.studentId}</Text>
+              <Text style={styles.studentName}>{mockUserData.studentName}</Text>
+              <Text style={styles.studentId}>ID: {mockUserData.studentId}</Text>
             </View>
             <View style={styles.headerRight}>
               <View style={styles.statusIndicator}>
@@ -232,31 +441,31 @@ export default function StudentDashboardScreen() {
           <View style={styles.statusRow}>
             <View style={styles.statusItem}>
               <Ionicons 
-                name={getStatusIcon(mockData.verification.corStatus)} 
+                name={getStatusIcon(mockUserData.verification.corStatus)} 
                 size={20} 
-                color={getStatusColor(mockData.verification.corStatus)} 
+                color={getStatusColor(mockUserData.verification.corStatus)} 
               />
               <Text style={styles.statusItemText}>CoR: </Text>
               <Text style={[
                 styles.statusItemValue,
-                { color: getStatusColor(mockData.verification.corStatus) }
+                { color: getStatusColor(mockUserData.verification.corStatus) }
               ]}>
-                {mockData.verification.corStatus.toUpperCase()}
+                {mockUserData.verification.corStatus.toUpperCase()}
               </Text>
             </View>
             
             <View style={styles.statusItem}>
               <Ionicons 
-                name={getStatusIcon(mockData.verification.schoolIdStatus)} 
+                name={getStatusIcon(mockUserData.verification.schoolIdStatus)} 
                 size={20} 
-                color={getStatusColor(mockData.verification.schoolIdStatus)} 
+                color={getStatusColor(mockUserData.verification.schoolIdStatus)} 
               />
               <Text style={styles.statusItemText}>School ID: </Text>
               <Text style={[
                 styles.statusItemValue,
-                { color: getStatusColor(mockData.verification.schoolIdStatus) }
+                { color: getStatusColor(mockUserData.verification.schoolIdStatus) }
               ]}>
-                {mockData.verification.schoolIdStatus.toUpperCase()}
+                {mockUserData.verification.schoolIdStatus.toUpperCase()}
               </Text>
             </View>
           </View>
@@ -265,13 +474,13 @@ export default function StudentDashboardScreen() {
             <View style={styles.statusItem}>
               <Ionicons name="school-outline" size={20} color="#6B7280" />
               <Text style={styles.statusItemText}>Year Level: </Text>
-              <Text style={styles.statusItemValue}>{mockData.yearLevel}</Text>
+              <Text style={styles.statusItemValue}>{mockUserData.yearLevel}</Text>
             </View>
             
             <View style={styles.statusItem}>
               <Ionicons name="time-outline" size={20} color="#6B7280" />
               <Text style={styles.statusItemText}>Updated: </Text>
-              <Text style={styles.statusItemValue}>Dec 10</Text>
+              <Text style={styles.statusItemValue}>Today</Text>
             </View>
           </View>
           
@@ -326,7 +535,7 @@ export default function StudentDashboardScreen() {
             <View style={[styles.actionIcon, { backgroundColor: '#EFF6FF' }]}>
               <Ionicons name="calendar-outline" size={28} color="#2563EB" />
             </View>
-            <Text style={styles.actionText}>View Available Slots</Text>
+            <Text style={styles.actionText}>Book Appointment</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
@@ -361,17 +570,19 @@ export default function StudentDashboardScreen() {
         </View>
 
         {/* NEXT APPOINTMENT CARD */}
-        {nextAppointment && (
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Next Appointment</Text>
-          </View>
-        )}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Next Appointment</Text>
+        </View>
         
-        {nextAppointment && (
+        {nextAppointment ? (
           <View style={[styles.card, styles.appointmentCard]}>
             <View style={styles.appointmentHeader}>
               <View style={styles.serviceBadge}>
-                <Ionicons name="medkit-outline" size={16} color="#2563EB" />
+                <Ionicons 
+                  name={nextAppointment.service?.toLowerCase().includes('dental') ? 'fitness-outline' : 'medical-outline'} 
+                  size={16} 
+                  color="#2563EB" 
+                />
                 <Text style={styles.serviceText}>{nextAppointment.service}</Text>
               </View>
               <View style={[
@@ -387,7 +598,7 @@ export default function StudentDashboardScreen() {
                   styles.statusBadgeText,
                   { color: nextAppointment.status === 'confirmed' ? '#10B981' : '#F59E0B' }
                 ]}>
-                  {nextAppointment.status.toUpperCase()}
+                  {nextAppointment.status?.toUpperCase() || 'CONFIRMED'}
                 </Text>
               </View>
             </View>
@@ -396,26 +607,30 @@ export default function StudentDashboardScreen() {
               <View style={styles.detailRow}>
                 <Ionicons name="person-outline" size={18} color="#6B7280" />
                 <Text style={styles.detailLabel}>Doctor: </Text>
-                <Text style={styles.detailValue}>{nextAppointment.doctor}</Text>
+                <Text style={styles.detailValue}>{nextAppointment.doctorName}</Text>
               </View>
               
               <View style={styles.detailRow}>
                 <Ionicons name="calendar-outline" size={18} color="#6B7280" />
                 <Text style={styles.detailLabel}>Date: </Text>
-                <Text style={styles.detailValue}>{nextAppointment.date}</Text>
+                <Text style={styles.detailValue}>
+                  {formatDate(nextAppointment.date)}
+                </Text>
               </View>
               
               <View style={styles.detailRow}>
                 <Ionicons name="time-outline" size={18} color="#6B7280" />
                 <Text style={styles.detailLabel}>Time: </Text>
-                <Text style={styles.detailValue}>{nextAppointment.time}</Text>
+                <Text style={styles.detailValue}>
+                  {formatTime(nextAppointment.time)}
+                </Text>
               </View>
             </View>
             
             <View style={styles.appointmentActions}>
               <TouchableOpacity 
                 style={styles.viewButton}
-                onPress={() => navigation.navigate('Appointments', { id: nextAppointment.id })}
+                onPress={() => navigation.navigate('Appointments')}
               >
                 <Text style={styles.viewButtonText}>View Details</Text>
               </TouchableOpacity>
@@ -428,11 +643,22 @@ export default function StudentDashboardScreen() {
               </TouchableOpacity>
             </View>
           </View>
+        ) : (
+          <View style={[styles.card, styles.noAppointmentCard]}>
+            <Ionicons name="calendar-outline" size={48} color="#CBD5E1" />
+            <Text style={styles.noAppointmentText}>No upcoming appointments</Text>
+            <TouchableOpacity 
+              style={styles.bookNowButtonSmall}
+              onPress={handleBookAppointment}
+            >
+              <Text style={styles.bookNowButtonText}>Book Appointment</Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         {/* SERVICE AVAILABILITY QUICK VIEW */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Available Now</Text>
+          <Text style={styles.sectionTitle}>Available Today</Text>
         </View>
         
         <View style={styles.availabilityCard}>
@@ -443,7 +669,7 @@ export default function StudentDashboardScreen() {
             <View style={styles.availabilityDetails}>
               <Text style={styles.availabilityService}>Medical</Text>
               <Text style={styles.availabilitySlots}>
-                {mockData.availableSlots.medical} slots today
+                {availability.medical} {availability.medical === 1 ? 'slot' : 'slots'} available
               </Text>
             </View>
           </View>
@@ -455,7 +681,7 @@ export default function StudentDashboardScreen() {
             <View style={styles.availabilityDetails}>
               <Text style={styles.availabilityService}>Dental</Text>
               <Text style={styles.availabilitySlots}>
-                {mockData.availableSlots.dental} slot tomorrow
+                {availability.dental} {availability.dental === 1 ? 'slot' : 'slots'} available
               </Text>
             </View>
           </View>
@@ -463,8 +689,13 @@ export default function StudentDashboardScreen() {
           <TouchableOpacity 
             style={styles.bookNowButton}
             onPress={handleBookAppointment}
+            disabled={availability.medical === 0 && availability.dental === 0}
           >
-            <Text style={styles.bookNowText}>Book Now</Text>
+            <Text style={styles.bookNowText}>
+              {availability.medical === 0 && availability.dental === 0 
+                ? 'No Slots Available' 
+                : 'Book Now'}
+            </Text>
             <Ionicons name="arrow-forward" size={18} color="white" />
           </TouchableOpacity>
         </View>
@@ -473,60 +704,88 @@ export default function StudentDashboardScreen() {
         <View style={styles.sectionHeader}>
           <View style={styles.notificationsHeader}>
             <Text style={styles.sectionTitle}>Notifications</Text>
-            <TouchableOpacity>
-              <Text style={styles.markAllText}>Mark all read</Text>
-            </TouchableOpacity>
+            {notifications.length > 0 && (
+              <TouchableOpacity onPress={handleMarkAllNotificationsRead}>
+                <Text style={styles.markAllText}>Mark all read</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
         
-        <View style={styles.notificationsCard}>
-          {mockData.notifications.map((notification) => (
-            <View key={notification.id} style={styles.notificationItem}>
-              <Ionicons 
-                name={notification.type === 'warning' ? 'warning-outline' : 'notifications-outline'} 
-                size={20} 
-                color={notification.type === 'warning' ? '#F59E0B' : '#2563EB'} 
-              />
-              <Text style={[
-                styles.notificationText,
-                !notification.read && styles.notificationUnread
-              ]}>
-                {notification.message}
-              </Text>
-            </View>
-          ))}
-        </View>
+        {notifications.length > 0 ? (
+          <View style={styles.notificationsCard}>
+            {notifications.map((notification) => (
+              <View key={notification.id} style={styles.notificationItem}>
+                <Ionicons 
+                  name={notification.type === 'warning' ? 'warning-outline' : 
+                        notification.type === 'info' ? 'information-circle-outline' : 
+                        'notifications-outline'} 
+                  size={20} 
+                  color={notification.type === 'warning' ? '#F59E0B' : 
+                         notification.type === 'info' ? '#3B82F6' : '#2563EB'} 
+                />
+                <Text style={[
+                  styles.notificationText,
+                  !notification.read && styles.notificationUnread
+                ]}>
+                  {notification.message}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View style={[styles.card, styles.noNotificationsCard]}>
+            <Ionicons name="notifications-off-outline" size={32} color="#CBD5E1" />
+            <Text style={styles.noNotificationsText}>No notifications</Text>
+          </View>
+        )}
 
         {/* RECENT ACTIVITY */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Activity</Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={handleViewAppointments}>
             <Text style={styles.viewAllText}>View All</Text>
           </TouchableOpacity>
         </View>
         
-        <View style={styles.activityCard}>
-          {mockData.recentActivity.map((activity) => (
-            <View key={activity.id} style={styles.activityItem}>
-              <View style={styles.activityIcon}>
-                <Ionicons 
-                  name={
-                    activity.type === 'booking' ? 'calendar-outline' :
-                    activity.type === 'upload' ? 'cloud-upload-outline' :
-                    activity.type === 'completed' ? 'checkmark-done-outline' :
-                    'checkmark-circle-outline'
-                  } 
-                  size={16} 
-                  color="#6B7280" 
-                />
+        {recentActivity.length > 0 ? (
+          <View style={styles.activityCard}>
+            {recentActivity.map((activity) => (
+              <View key={activity.id} style={styles.activityItem}>
+                <View style={styles.activityIcon}>
+                  <Ionicons 
+                    name={
+                      activity.type === 'booking' ? 'calendar-outline' :
+                      activity.type === 'completed' ? 'checkmark-done-outline' :
+                      'close-circle-outline'
+                    } 
+                    size={16} 
+                    color={
+                      activity.type === 'booking' ? '#2563EB' :
+                      activity.type === 'completed' ? '#10B981' :
+                      '#EF4444'
+                    } 
+                  />
+                </View>
+                <View style={styles.activityDetails}>
+                  <Text style={styles.activityDate}>{activity.date}</Text>
+                  <Text style={styles.activityAction}>{activity.action}</Text>
+                </View>
               </View>
-              <View style={styles.activityDetails}>
-                <Text style={styles.activityDate}>{activity.date}</Text>
-                <Text style={styles.activityAction}>{activity.action}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
+        ) : (
+          <View style={[styles.card, styles.noActivityCard]}>
+            <Ionicons name="time-outline" size={32} color="#CBD5E1" />
+            <Text style={styles.noActivityText}>No recent activity</Text>
+            <TouchableOpacity 
+              style={styles.bookNowButtonSmall}
+              onPress={handleBookAppointment}
+            >
+              <Text style={styles.bookNowButtonText}>Book Your First Appointment</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* SYSTEM STATUS */}
         <View style={styles.systemStatus}>
@@ -536,7 +795,7 @@ export default function StudentDashboardScreen() {
           </View>
           <View style={styles.systemStatusItem}>
             <Ionicons name="calendar-outline" size={16} color="#6B7280" />
-            <Text style={styles.systemStatusText}>Next Available: Today 3:00 PM</Text>
+            <Text style={styles.systemStatusText}>Last Updated: Just now</Text>
           </View>
         </View>
 
@@ -893,6 +1152,31 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   
+  // NO APPOINTMENT CARD
+  noAppointmentCard: {
+    alignItems: 'center',
+    padding: 30,
+    marginTop: 0,
+  },
+  noAppointmentText: {
+    fontSize: 16,
+    color: '#64748B',
+    marginTop: 12,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  bookNowButtonSmall: {
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  bookNowButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  
   // AVAILABILITY
   availabilityCard: {
     backgroundColor: 'white',
@@ -989,6 +1273,18 @@ const styles = StyleSheet.create({
     color: '#1E293B',
     fontWeight: '500',
   },
+  noNotificationsCard: {
+    alignItems: 'center',
+    padding: 30,
+    marginHorizontal: 20,
+    marginBottom: 24,
+  },
+  noNotificationsText: {
+    fontSize: 16,
+    color: '#64748B',
+    marginTop: 12,
+    textAlign: 'center',
+  },
   
   // ACTIVITY
   activityCard: {
@@ -1024,6 +1320,19 @@ const styles = StyleSheet.create({
   activityAction: {
     fontSize: 14,
     color: '#1E293B',
+  },
+  noActivityCard: {
+    alignItems: 'center',
+    padding: 30,
+    marginHorizontal: 20,
+    marginBottom: 24,
+  },
+  noActivityText: {
+    fontSize: 16,
+    color: '#64748B',
+    marginTop: 12,
+    marginBottom: 20,
+    textAlign: 'center',
   },
   
   // SYSTEM STATUS
